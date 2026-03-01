@@ -20,6 +20,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 import pygame
+from PIL import Image
 
 from utils import create_environment, iou
 
@@ -91,6 +92,9 @@ def evaluate(
 
         for agent in env.agent_iter():
             obs, reward, termination, truncation, info = env.last()
+            print(obs)
+            img = Image.fromarray(obs, mode='RGB') 
+            img.save(f"./Data/world{step_count}.png")
             step_count += 1
 
             # Accumulate rewards for all agents

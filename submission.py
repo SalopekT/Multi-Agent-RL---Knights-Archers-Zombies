@@ -4,6 +4,7 @@ from typing import Callable
 import gymnasium
 from pettingzoo.utils import BaseWrapper
 from pettingzoo.utils.env import AgentID, ObsType
+from PIL import Image
 
 
 class CustomWrapper(BaseWrapper):
@@ -12,20 +13,27 @@ class CustomWrapper(BaseWrapper):
     """
 
     def observation_space(self, agent: AgentID) -> gymnasium.spaces.Space:
-        pass
+        return spaces.flatten_space(super().observation_space(agent))
 
     def observe(self, agent: AgentID) -> ObsType | None:
-        pass
+        obs = super().observe(agent)
+        '''img = Image.fromarray(obs, mode='RGB') 
+        img.save('rgb.png') '''
+        #print(obs.shape)
+        #flat_obs = obs.flatten()
+        #print(flat_obs.shape)
+        #return flat_obs
+        return obs
 
 
 class CustomPredictFunction(Callable):
     """Function to use to load the trained model and predict the action"""
 
-    def __init__(self, env: gymnasium.Env):
-        pass
+    def __init__(self, env):
+        self.env = env
 
     def __call__(self, observation, agent, *args, **kwargs):
-        pass
+        return self.env.action_space(agent).sample()
 
 
 class CustomZombieDetectorFunction(Callable):

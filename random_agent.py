@@ -5,6 +5,7 @@ import gymnasium
 from gymnasium import spaces
 from pettingzoo.utils import BaseWrapper
 from pettingzoo.utils.env import AgentID, ObsType
+from PIL import Image
 
 
 class CustomWrapper(BaseWrapper):
@@ -19,7 +20,11 @@ class CustomWrapper(BaseWrapper):
 
     def observe(self, agent: AgentID) -> ObsType | None:
         obs = super().observe(agent)
+        img = Image.fromarray(obs, mode='RGB') 
+        img.save('rgb.png') 
+        #print(obs.shape)
         flat_obs = obs.flatten()
+        #print(flat_obs.shape)
         return flat_obs
 
 
@@ -39,6 +44,8 @@ class CustomZombieDetectorFunction(Callable):
         pass
 
     def __call__(self, observation, *args, **kwargs):
+        print("hello")
+        print(observation)
         nb_zombies_detected = random.randint(0,4)
         zombie_rects = np.zeros((nb_zombies_detected, 4))
         for i in range(nb_zombies_detected):
