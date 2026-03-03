@@ -435,11 +435,16 @@ class VisualWrapper(BaseWrapper):
         # return self.env.observe(agent)
         # Overwrite entire function to return full game view
         if self.vector_state:
-            raise ValueError("You cannot use vector_state")
+            return self.env.observe(agent)
+            #raise ValueError("You cannot use vector_state")
         screen = pygame.surfarray.pixels3d(self.screen)
         cropped = np.array(screen)
         return np.swapaxes(cropped, 1, 0)
 
+    def get_frame(self):
+        self._refresh_transformed_frame(force=True)
+        return self._frame_whc
+    
     def render(self):
         # Optional explicit render: refresh and show/return
         self._refresh_transformed_frame(force=True)
@@ -490,6 +495,7 @@ class VisualWrapper(BaseWrapper):
     def _show(self):
         if self._frame_whc is None:
             return
+        #print(self._frame_whc)
         w, h = self._frame_whc.shape[0], self._frame_whc.shape[1]
         self._ensure_display(w, h)
 

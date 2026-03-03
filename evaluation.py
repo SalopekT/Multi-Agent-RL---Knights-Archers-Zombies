@@ -22,6 +22,8 @@ import numpy as np
 import pygame
 from PIL import Image
 
+import data_generator as dg
+
 from utils import create_environment, iou
 
 logger = logging.getLogger("ml-project")
@@ -92,9 +94,9 @@ def evaluate(
 
         for agent in env.agent_iter():
             obs, reward, termination, truncation, info = env.last()
-            print(obs)
-            img = Image.fromarray(obs, mode='RGB') 
-            img.save(f"./Data/world{step_count}.png")
+            
+            dg.generate_one_data_point(env,step_count)
+
             step_count += 1
 
             # Accumulate rewards for all agents
@@ -233,6 +235,7 @@ def setup_logging(verbose: int, quiet: int) -> None:
 
 
 def main(argv=None) -> int:
+    dg.test_examples()
     parser = argparse.ArgumentParser(
         description="Load an agent and evaluate its performance in the KAZ environment.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,

@@ -35,7 +35,7 @@ def create_environment(
     # Set parameters
 
     num_agents = 2
-    visual_observation = True
+    visual_observation = False
 
 
     # Create base environment
@@ -45,8 +45,10 @@ def create_environment(
         num_knights=0,
         max_zombies=max_zombies,
         vector_state=not visual_observation,
+        use_typemasks = True,
         render_mode= "rgb_array" # We will handle rendering in VisualWrapper, not here
     )
+
 
     # Apply visual observation wrapper
     set_distortion_level(level=distortion_level)
