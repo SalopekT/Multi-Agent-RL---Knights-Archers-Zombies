@@ -97,7 +97,9 @@ def evaluate(
         for agent in env.agent_iter():
             obs, reward, termination, truncation, info = env.last()
             
-            data_generator.generate_one_data_point(env,step_count)
+            #data_generator.generate_one_data_point(env,step_count)
+            #dg.draw_zombie_positions(env)
+            dg.draw_detected_zombies(env)
 
             step_count += 1
 
