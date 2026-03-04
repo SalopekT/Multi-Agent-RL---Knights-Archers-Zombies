@@ -87,6 +87,8 @@ def evaluate(
     do_terminate = False
     start_time = time.time()
 
+    data_generator = dg.DataGenerator()
+
     for i, seed in enumerate(seeds):
         env.reset(seed=seed)
         env.action_space(env.possible_agents[0]).seed(seed)
@@ -95,7 +97,7 @@ def evaluate(
         for agent in env.agent_iter():
             obs, reward, termination, truncation, info = env.last()
             
-            dg.generate_one_data_point(env,step_count)
+            data_generator.generate_one_data_point(env,step_count)
 
             step_count += 1
 
