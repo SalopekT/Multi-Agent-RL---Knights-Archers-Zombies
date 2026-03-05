@@ -11,8 +11,15 @@ def main():
          ('H','H'):[2.0/3, 2.0/3]}
     
     stag_hunt = game.Game(N,A,u)
-    player1 = game.Player(stag_hunt,1,True)
-    player2 = game.Player(stag_hunt,2, True)
+    '''player1 = game.EpsilonGreedyPlayer(stag_hunt,1,0.1)
+    player2 = game.Player(stag_hunt,2)
+    player2._strategy = [0.8,0.2]
+    stag_hunt.add_player(player1)
+    stag_hunt.add_player(player2)'''
+
+    player1 = game.BoltzmannPlayer(stag_hunt,1,3)
+    player2 = game.Player(stag_hunt,2)
+    player2._strategy = [0.8,0.2]
     stag_hunt.add_player(player1)
     stag_hunt.add_player(player2)
     
