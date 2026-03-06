@@ -12,18 +12,27 @@ def main():
     
     stag_hunt = game.Game(N,A,u)
     '''player1 = game.EpsilonGreedyPlayer(stag_hunt,1,0.1)
-    player2 = game.Player(stag_hunt,2)
-    player2._strategy = [0.8,0.2]
+    player2 = game.EpsilonGreedyPlayer(stag_hunt,2,0.1)
+    
     stag_hunt.add_player(player1)
     stag_hunt.add_player(player2)'''
 
-    player1 = game.BoltzmannPlayer(stag_hunt,1,3)
-    player2 = game.Player(stag_hunt,2)
-    player2._strategy = [0.8,0.2]
+    '''player1 = game.BoltzmannPlayer(stag_hunt,1,10)
+    #player1._q_table = [10,1.9/3]
+
+    player2 = game.BoltzmannPlayer(stag_hunt,2,10)
+    #player2._q_table = [10,1.9/3]
+
+    player3 = game.Player(stag_hunt,2)
+    player3.strategy = [0.7,0.3]'''
+
+    player1 = game.LenientBoltzmannPlayer(stag_hunt,1,1,10)
+    player2 = game.LenientBoltzmannPlayer(stag_hunt,2,1,10)
+
     stag_hunt.add_player(player1)
     stag_hunt.add_player(player2)
     
-    for i in range(10000):
+    for i in range(100000):
         stag_hunt.play_round()
         if i%1000==0:
             print(player1.q_table)
