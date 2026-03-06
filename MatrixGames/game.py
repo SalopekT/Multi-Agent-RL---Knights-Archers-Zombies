@@ -3,10 +3,13 @@ import random
 import math
 
 class Game:
-    def __init__(self,N, A, u): #similar to a game in normal form but here A is set of possible actions
+    def __init__(self,N, A, u, u_1, u_2): #similar to a game in normal form but here A is set of possible actions
         self._N = N
         self._A = A
         self._u = u
+        self._u_1 = u_1
+        self._u_2 = u_2
+        self._alpha = 0.01
         self._player_list = []
 
     @property 
@@ -24,6 +27,20 @@ class Game:
     @property 
     def player_list(self): 
 	    return self._player_list
+    
+    @property 
+    def alpha(self): 
+	    return self._alpha
+    
+    @property 
+    def u_1(self): 
+	    return self._u_1
+    
+    @property 
+    def u_2(self): 
+	    return self._u_2
+    
+
     
     def add_player(self,player):
         if len(self._player_list) < len(self._N):
@@ -51,7 +68,7 @@ class Game:
             utility = self._u[moves_names_tuple]
             #print(utility)
             for i in range(len(self._player_list)):
-                self._player_list[i].q_learning_update(moves_tuple[i],utility[i],0.01)
+                self._player_list[i].q_learning_update(moves_tuple[i],utility[i],self._alpha)
             return utility
         
     
@@ -125,6 +142,10 @@ class BoltzmannPlayer(Player):
      def __init__(self, game, i,temperature):
         super().__init__(game,i)
         self._temperature = temperature
+
+     @property 
+     def temperature(self): 
+	     return self._temperature
 
      def exp_list_temp(self,l):
         result = []
