@@ -23,6 +23,7 @@ import pygame
 from PIL import Image
 
 import data_generator as dg
+import template_matching as tm
 
 from utils import create_environment, iou
 
@@ -99,7 +100,9 @@ def evaluate(
             
             #data_generator.generate_one_data_point(env,step_count)
             #dg.draw_zombie_positions(env)
-            dg.draw_detected_zombies(env)
+            #dg.draw_detected_zombies(env)
+
+            tm.find_zombies(obs)
 
             step_count += 1
 

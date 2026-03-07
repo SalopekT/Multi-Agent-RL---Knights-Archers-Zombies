@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import game
-
+import math
 
 def create_simple_plot():
     # Creating arrow
@@ -19,16 +19,16 @@ def create_simple_plot():
     plt.show()
 
 def calculate_vector_field_boltzmann(game, P,Q, u1, u2):
-    vector_field_x = np.zeros((11,11))
-    vector_field_y = np.zeros((11,11))
+    vector_field_x = np.zeros((100,100))
+    vector_field_y = np.zeros((100,100))
 
-    for i in range(11):
-        for j in range(11):
+    for i in range(100):
+        for j in range(100):
             strategy1 = np.array([P[i,j], 1-P[i,j]])
             strategy2 = np.array([Q[i,j], 1-Q[i,j]])
 
             player1_expected_reward = u1 @ strategy2
-            player2_expected_reward = u2 @ strategy1
+            player2_expected_reward = u2.T @ strategy1
 
             helper_term = strategy1/strategy1[0]
             helper_term = np.log(helper_term)
@@ -45,7 +45,6 @@ def calculate_vector_field_boltzmann(game, P,Q, u1, u2):
                 *(player2_expected_reward[0]-player2_expected_reward @ strategy2)
                 +game.alpha*strategy2[0]*helper_term @ strategy2
                 )
-            
             vector_field_x[i,j] = derivative_player1
             vector_field_y[i,j] = derivative_player2
     return vector_field_x,vector_field_y
@@ -54,8 +53,8 @@ def calculate_vector_field_boltzmann(game, P,Q, u1, u2):
 
 
 def show_replicator_dynamics_boltzmann(game : game.Game):
-    p = np.arange(0, 1.1, 0.1)
-    q = np.arange(0, 1.1, 0.1)  
+    p = np.linspace(0.01,1,100)
+    q = np.linspace(0.01,1,100)
     P, Q = np.meshgrid(p, q)
 
     utility_mat_1 = game.u_1
@@ -65,12 +64,8 @@ def show_replicator_dynamics_boltzmann(game : game.Game):
     print(Q)
     
     v1, v2 = calculate_vector_field_boltzmann(game,P,Q,utility_mat_1,utility_mat_2)
-    fig, ax = plt.subplots(figsize =(14, 8))
-    ax.quiver(P, Q, v1, v2)
-
-    '''ax.xaxis.set_ticks([])
-    ax.yaxis.set_ticks([])'''
-    #ax.axis([-0.3, 2.3, -0.3, 2.3])
+    fig, ax = plt.subplots()
+    ax.quiver(P[::5,::5], Q[::5,::5], v1[::5,::5], v2[::5,::5],units='xy')
     ax.set_aspect('equal')
 
     # show plot

@@ -20,10 +20,10 @@ def main():
     stag_hunt.add_player(player1)
     stag_hunt.add_player(player2)'''
 
-    player1 = game.BoltzmannPlayer(stag_hunt,1,10)
+    player1 = game.BoltzmannPlayer(stag_hunt,1,1)
     #player1._q_table = [10,1.9/3]
 
-    player2 = game.BoltzmannPlayer(stag_hunt,2,10)
+    player2 = game.BoltzmannPlayer(stag_hunt,2,1)
     #player2._q_table = [10,1.9/3]
 
     player3 = game.Player(stag_hunt,2)
