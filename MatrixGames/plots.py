@@ -67,9 +67,9 @@ def show_replicator_dynamics_boltzmann(game : game.Game):
     fig, ax = plt.subplots()
     ax.quiver(P[::5,::5], Q[::5,::5], v1[::5,::5], v2[::5,::5],units='xy')
     ax.set_aspect('equal')
-
+    return ax
     # show plot
-    plt.show()
+    #plt.show()
     
     
 

@@ -59,7 +59,7 @@ def draw_detected_zombies(env : Any):
 
         draw = ImageDraw.Draw(pil_image)
         draw.ellipse([real_center_x-5,real_center_y-5,real_center_x+5,real_center_y+5],fill ="#ffff33", outline ="red")
-    pil_image.save("zombie_detection_shown.jpg")
+    #pil_image.save("zombie_detection_shown.jpg")
     
 
 

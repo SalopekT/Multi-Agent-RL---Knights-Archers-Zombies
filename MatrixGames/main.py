@@ -1,6 +1,7 @@
 import game
 import plots
 import numpy as np
+import matplotlib.pyplot as plt
 
 def main():
     print("Hello World!")
@@ -35,13 +36,20 @@ def main():
     stag_hunt.add_player(player1)
     stag_hunt.add_player(player2)
 
-    plots.show_replicator_dynamics_boltzmann(stag_hunt)
+    ax = plots.show_replicator_dynamics_boltzmann(stag_hunt)
     
-    for i in range(100000):
-        stag_hunt.play_round()
-        if i%1000==0:
-            print(player1.q_table)
-            print(player2.q_table)
+    for epoch in range(5):
+        for i in range(1000000):
+            stag_hunt.play_round()
+            if i%100000==0:
+                print(player1.q_table)
+                print(player2.q_table)
+        trajectory_p1, trajectory_p2 = stag_hunt.get_last_trajectories()
+        ax.plot(trajectory_p1,trajectory_p2,'r')
+        stag_hunt.empty_trajectories()
+        stag_hunt.reinit_strategies()
+
+    plt.show()
 
 
 if __name__ == "__main__":

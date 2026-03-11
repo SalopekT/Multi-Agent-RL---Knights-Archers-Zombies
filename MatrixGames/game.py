@@ -9,8 +9,11 @@ class Game:
         self._u = u
         self._u_1 = u_1
         self._u_2 = u_2
-        self._alpha = 0.01
+        self._alpha = 0.0001
         self._player_list = []
+
+        self._trajectory_p1 = []
+        self._trajectory_p2 = []
 
     @property 
     def N(self): 
@@ -40,6 +43,18 @@ class Game:
     def u_2(self): 
 	    return self._u_2
     
+    def get_last_trajectories(self):
+         return self._trajectory_p1, self._trajectory_p2
+    
+    def empty_trajectories(self):
+         self._trajectory_p1.clear()
+         self._trajectory_p2.clear()
+
+    def reinit_strategies(self):
+         for player in self._player_list:
+            q1 = random.randint(1,10)
+            q2 = random.randint(1,10)
+            player._q_table = [q1,q2]
 
     
     def add_player(self,player):
@@ -69,6 +84,10 @@ class Game:
             #print(utility)
             for i in range(len(self._player_list)):
                 self._player_list[i].q_learning_update(moves_tuple[i],utility[i],self._alpha)
+                if i==0:
+                    self._trajectory_p1.append(self._player_list[i].strategy[0])
+                elif i==1:
+                    self._trajectory_p2.append(self._player_list[i].strategy[0])
             return utility
         
     
@@ -109,14 +128,14 @@ class Player:
     
     def make_random_move(self):
         number = np.random.uniform()
-        cumulative = self._strategy[0]
+        cumulative = 0
         index = 0
         while (cumulative<number):
             cumulative+=self._strategy[index]
+            if number < cumulative:
+                return index
             index+=1
-        if index > len(self._strategy)-1:
-             index-=1
-        return index
+        return len(self._strategy) - 1
 
     def q_learning_update(self, move, utility, alpha):
         self._q_table[move] = self._q_table[move]+alpha*(utility-self._q_table[move])
@@ -142,6 +161,11 @@ class BoltzmannPlayer(Player):
      def __init__(self, game, i,temperature):
         super().__init__(game,i)
         self._temperature = temperature
+        if len(super().strategy)==2:
+             q1 = random.randint(1,10)
+             q2 = random.randint(1,10)
+             self._q_table = [q1,q2]
+             
 
      @property 
      def temperature(self): 
