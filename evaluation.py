@@ -101,7 +101,10 @@ def evaluate(
             #dg.draw_zombie_positions(env)
             #dg.draw_detected_zombies(env)
 
-            #tm.find_zombies(obs)
+            boxes, indices = tm.find_zombies(obs)
+            print(boxes)
+            print(indices)
+            #print(obs)
 
             step_count += 1
 

@@ -12,6 +12,7 @@ import numpy as np
 from PIL import Image
 import torch
 from gymnasium import spaces
+import gymnasium
 from pettingzoo.utils import BaseWrapper
 from pettingzoo.utils.env import AgentID, ObsType
 from ray.rllib.core.rl_module import MultiRLModule
