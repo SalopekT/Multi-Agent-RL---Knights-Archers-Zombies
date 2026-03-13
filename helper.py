@@ -1,4 +1,3 @@
-import math
-l = [1,2,3]
-new_l = l/3
-print(new_l)
+import data_generator
+
+data_generator.test_examples()

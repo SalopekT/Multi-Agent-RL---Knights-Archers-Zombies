@@ -20,8 +20,8 @@ def extract_zombie_coords(all_positions): #all_positions is global game state
         if object[0]==1:
             w_bbox = 29.0/1280
             h_bbox = 31.0/720
-            x = object[6]+h_bbox
-            y = object[7]+w_bbox
+            x = object[7]+w_bbox
+            y = object[6]+h_bbox
             zombie_normalized_coords = [x,y,w_bbox,h_bbox]
             all_zombies.append(zombie_normalized_coords)
     return np.array(all_zombies)
@@ -35,8 +35,8 @@ def extract_teammate_coords(all_positions):
     for object in all_positions:
         '''if object[5]==1:
             print(object[7],object[8])'''
-        if object[1]==1 and (object[7]!=0.0 or object[8]!=0.0):
-            return np.array([object[7],object[8]])
+        if object[1]==1 and (object[6]!=0.0 or object[7]!=0.0):
+            return np.array([object[7],object[6]])
 
 #this function is just to draw circles on zombie positions and storing to an image(not really neccessary)
 def draw_zombie_positions(env : Any):
@@ -77,11 +77,11 @@ def draw_detected_zombies(env : Any):
 
 class DataGenerator:
     def __init__(self):
-        self._counter = 0
+        self._counter = 2
 
     #https://docs.ultralytics.com/datasets/#steps-to-contribute-a-new-dataset
     #generates for each frame an image and a txt file which describes zombie positions(need this for yolo training)
-    def generate_one_data_point(self,env : Any, agent, obs, step):
+    '''def generate_one_data_point(self,env : Any, agent, obs, step):
         #state is a global state
         curr_state = env.state()
 
@@ -96,16 +96,24 @@ class DataGenerator:
         train_or_val = random.randint(1,10)
         if train_or_val > 2:
             for zombie in zombie_coords:
+                pixel_x_diff = 1280*zombie[0]
+                pixel_y_diff = 720*zombie[1]
+                if (abs(pixel_x_diff)<256 and abs(pixel_y_diff)<256):
+                    with open(f"dataset\\labels\\train\\img{self._counter}.txt", "a") as f:
+                        f.write(f"0 {zombie[0]} {zombie[1]} {zombie[2]} {zombie[3]}\n") 
+            if teammate is not None:
                 with open(f"dataset\\labels\\train\\img{self._counter}.txt", "a") as f:
-                    f.write(f"0 {zombie[0]} {zombie[1]} {zombie[2]} {zombie[3]}\n")
-            with open(f"dataset\\labels\\train\\img{self._counter}.txt", "a") as f:
-                    f.write(f"1 {teammate[0]} {teammate[1]} 30 30\n")
+                        f.write(f"1 {teammate[0]} {teammate[1]} 0.03 0.03\n")
         else:
             for zombie in zombie_coords:
+                pixel_x_diff = 1280*zombie[0]
+                pixel_y_diff = 720*zombie[1]
+                if (abs(pixel_x_diff)<256 and abs(pixel_y_diff)<256):
+                    with open(f"dataset\\labels\\val\\img{self._counter}.txt", "a") as f:
+                        f.write(f"0 {zombie[0]} {zombie[1]} {zombie[2]} {zombie[3]}\n")
+            if teammate is not None:
                 with open(f"dataset\\labels\\val\\img{self._counter}.txt", "a") as f:
-                    f.write(f"0 {zombie[0]} {zombie[1]} {zombie[2]} {zombie[3]}\n")
-            with open(f"dataset\\labels\\val\\img{self._counter}.txt", "a") as f:
-                    f.write(f"1 {teammate[0]} {teammate[1]} 30 30\n")
+                        f.write(f"1 {teammate[0]} {teammate[1]} 0.03 0.03\n")
 
         #data is the pixels on the screen
         #https://stackoverflow.com/questions/19982760/get-numpy-array-from-pygame
@@ -114,14 +122,72 @@ class DataGenerator:
         ##if i continue like this i need to crop full  screen to generate training images
         ##
         data = pygame.surfarray.array3d(env.unwrapped.screen)
+        data = np.swapaxes(data,0,1)
         print(data.shape)
-        own_pixel_x = own[0] * 1280
-        own_pixel_y = own[1] * 780
+        own_pixel_x = int(own[0] * 1280)
+        own_pixel_y = int(own[1] * 780)
+
         left   = own_pixel_x - 256
         right  = own_pixel_x + 256
         top    = own_pixel_y - 256
         bottom = own_pixel_y + 256
 
+        crop_left  = max(0, left)
+        crop_top   = max(0, top)
+        crop_right = min(1280, right)
+        crop_bottom= min(780, bottom)
+
+        paste_x = max(0, -left)
+        paste_y = max(0, -top)
+
+        black_img = np.zeros((512, 512, 3), dtype=np.uint8)
+
+        valid = data[crop_top:crop_bottom, crop_left:crop_right]
+
+        h, w = valid.shape[:2]
+
+        # paste it
+        black_img[paste_y:paste_y+h, paste_x:paste_x+w] = valid
+
+        if train_or_val > 2:
+            img = Image.fromarray(black_img, mode='RGB')
+            img.save(f"dataset\\images\\train\\img{self._counter}.jpeg")
+        else:
+            img = Image.fromarray(black_img, mode='RGB')
+            img.save(f"dataset\\images\\val\\img{self._counter}.jpeg")
+
+        self._counter+=6
+
+        raveled_data = data.ravel()
+        print(data.shape)
+        print(raveled_data.shape)
+        flat_obs = raveled_data.astype(np.float32) / 255.0
+
+        
+
+        if (step==0):
+            img = Image.fromarray(black_img, mode='RGB')
+            img.save('rgb.png')'''
+    
+    def generate_one_data_point(self,env : Any, agent, obs, step):
+        zombie_coords = extract_zombie_coords(obs)
+        print(zombie_coords)
+        #print(curr_state.shape)
+
+    
+        train_or_val = random.randint(1,10)
+        if train_or_val > 2:
+            for zombie in zombie_coords:
+                with open(f"dataset\\labels\\train\\img{self._counter}.txt", "a") as f:
+                    f.write(f"0 {zombie[0]} {zombie[1]} {zombie[2]} {zombie[3]}\n")
+        else:
+            for zombie in zombie_coords:
+                with open(f"dataset\\labels\\val\\img{self._counter}.txt", "a") as f:
+                    f.write(f"0 {zombie[0]} {zombie[1]} {zombie[2]} {zombie[3]}\n")
+
+        #data is the pixels on the screen
+        #https://stackoverflow.com/questions/19982760/get-numpy-array-from-pygame
+        data = pygame.surfarray.array3d(env.unwrapped.screen)
         data = np.swapaxes(data,0,1)
         print(data.shape)
         if train_or_val > 2:
@@ -140,6 +206,9 @@ class DataGenerator:
 
         
 
+    if (step==0):
+        img = Image.fromarray(data, mode='RGB')
+        img.save('rgb.png')
         if (step==0):
             img = Image.fromarray(data, mode='RGB')
             img.save('rgb.png')
