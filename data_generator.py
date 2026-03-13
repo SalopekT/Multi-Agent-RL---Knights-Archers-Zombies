@@ -18,13 +18,25 @@ def extract_zombie_coords(all_positions): #all_positions is global game state
     all_zombies = []
     for object in all_positions:
         if object[0]==1:
-            x = object[6]
-            y = object[7]
             w_bbox = 29.0/1280
             h_bbox = 31.0/720
+            x = object[6]+h_bbox
+            y = object[7]+w_bbox
             zombie_normalized_coords = [x,y,w_bbox,h_bbox]
             all_zombies.append(zombie_normalized_coords)
     return np.array(all_zombies)
+
+def extract_own_coordinates(all_positions):
+    for object in all_positions:
+        if object[5]==1:
+            return np.array([object[7],object[8]])
+
+def extract_teammate_coords(all_positions):
+    for object in all_positions:
+        '''if object[5]==1:
+            print(object[7],object[8])'''
+        if object[1]==1 and (object[7]!=0.0 or object[8]!=0.0):
+            return np.array([object[7],object[8]])
 
 #this function is just to draw circles on zombie positions and storing to an image(not really neccessary)
 def draw_zombie_positions(env : Any):
@@ -69,26 +81,47 @@ class DataGenerator:
 
     #https://docs.ultralytics.com/datasets/#steps-to-contribute-a-new-dataset
     #generates for each frame an image and a txt file which describes zombie positions(need this for yolo training)
-    def generate_one_data_point(self,env : Any, step):
+    def generate_one_data_point(self,env : Any, agent, obs, step):
         #state is a global state
         curr_state = env.state()
-        zombie_coords = extract_zombie_coords(curr_state)
-        print(zombie_coords)
-        #print(curr_state.shape)
+
+        #print(agent_obs)
+        zombie_coords = extract_zombie_coords(obs)
+        #print(zombie_coords)
+        own = extract_own_coordinates(obs)
+        #print(own)
+        teammate = extract_teammate_coords(obs)
+        #print(teammate)
 
         train_or_val = random.randint(1,10)
         if train_or_val > 2:
             for zombie in zombie_coords:
                 with open(f"dataset\\labels\\train\\img{self._counter}.txt", "a") as f:
                     f.write(f"0 {zombie[0]} {zombie[1]} {zombie[2]} {zombie[3]}\n")
+            with open(f"dataset\\labels\\train\\img{self._counter}.txt", "a") as f:
+                    f.write(f"1 {teammate[0]} {teammate[1]} 30 30\n")
         else:
             for zombie in zombie_coords:
                 with open(f"dataset\\labels\\val\\img{self._counter}.txt", "a") as f:
                     f.write(f"0 {zombie[0]} {zombie[1]} {zombie[2]} {zombie[3]}\n")
+            with open(f"dataset\\labels\\val\\img{self._counter}.txt", "a") as f:
+                    f.write(f"1 {teammate[0]} {teammate[1]} 30 30\n")
 
         #data is the pixels on the screen
         #https://stackoverflow.com/questions/19982760/get-numpy-array-from-pygame
+
+        ##
+        ##if i continue like this i need to crop full  screen to generate training images
+        ##
         data = pygame.surfarray.array3d(env.unwrapped.screen)
+        print(data.shape)
+        own_pixel_x = own[0] * 1280
+        own_pixel_y = own[1] * 780
+        left   = own_pixel_x - 256
+        right  = own_pixel_x + 256
+        top    = own_pixel_y - 256
+        bottom = own_pixel_y + 256
+
         data = np.swapaxes(data,0,1)
         print(data.shape)
         if train_or_val > 2:

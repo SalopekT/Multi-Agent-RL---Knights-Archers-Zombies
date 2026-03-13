@@ -10,6 +10,7 @@ import template_matching as tm
 from pathlib import Path
 from ray.rllib.core.rl_module import MultiRLModule
 import torch
+import numpy as np
 
 class CustomWrapper(BaseWrapper):
     """
@@ -17,13 +18,21 @@ class CustomWrapper(BaseWrapper):
     """
 
     def observation_space(self, agent: AgentID) -> gymnasium.spaces.Space:
-        return spaces.flatten_space(super().observation_space(agent))
+        max_zombies = self.env.unwrapped.max_zombies
+        box = spaces.Box(low=-1, high=512, shape=(max_zombies,2), dtype=np.int8)
+        return box
 
     def observe(self, agent: AgentID) -> ObsType | None:
-        obs = super().observe(agent)
+        max_zombies = self.env.unwrapped.max_zombies
+        obs = self.env.unwrapped.observe(agent)
+        obs_img = obs.astype(np.uint8)
+        d = CustomZombieDetectorFunction(self.env)
+        boxes = d(obs_img)
 
+        while len(boxes) < max_zombies:
+            boxes.append([-1,-1])
         
-        return obs
+        return boxes
 
 
 class CustomPredictFunction(Callable):

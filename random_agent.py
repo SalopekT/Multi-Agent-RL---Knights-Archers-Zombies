@@ -19,13 +19,18 @@ class CustomWrapper(BaseWrapper):
         return spaces.flatten_space(super().observation_space(agent))
 
     def observe(self, agent: AgentID) -> ObsType | None:
-        obs = super().observe(agent)
+        obs = self.env.unwrapped.observe(agent)
+        
+        return obs
+
+
+        '''obs = super().observe(agent)
         img = Image.fromarray(obs, mode='RGB') 
         img.save('rgb.png') 
         #print(obs.shape)
-        flat_obs = obs.flatten()
+        #flat_obs = obs.flatten()
         #print(flat_obs.shape)
-        return flat_obs
+        return obs'''
 
 
 class CustomPredictFunction(Callable):

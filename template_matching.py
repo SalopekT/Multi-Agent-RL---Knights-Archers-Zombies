@@ -17,8 +17,9 @@ def find_zombies(frame):
     '''clouds_removed = remove_clouds(frame)
     cv2.imwrite("no_cluds.jpg", clouds_removed)
     gray = cv2.cvtColor(clouds_removed, cv2.COLOR_BGR2GRAY)'''
-    frame_width = frame.shape[1]
-    frame_height = frame.shape[0]
+    frame_width = len(frame[0])
+    frame = np.array(frame)          # keep original type
+    print("lalala")
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     template = cv2.imread('even_smaller_template.png', cv2.IMREAD_GRAYSCALE)
     template = template.squeeze()
@@ -27,9 +28,9 @@ def find_zombies(frame):
 
     #res = cv2.matchTemplate(gray,template,cv2.TM_CCORR_NORMED)
     res = cv2.matchTemplate(gray,template,cv2.TM_SQDIFF_NORMED)
-    threshold = 0.5
+    threshold = 0.45
     loc = np.where( res <= threshold)
-    colored = frame
+    colored = frame.copy()
     boxes = []
 
     for pt in zip(*loc[::-1]): #this creates pairs (x,y)
@@ -46,8 +47,9 @@ def find_zombies(frame):
 
     for pt in filtered_boxes:
         x,y,w,h = pt
-        if (x>frame_width-50 or x<50):
-            continue
-        cv2.rectangle(colored, (x,y), (x + w, y + h), (0,0,255), 2)
+        '''if (x>frame_width-50 or x<50):
+            continue'''
+        if (x+w>0 and x+w<512 and y+h>0 and y+h<512):
+            cv2.rectangle(colored, (x,y), (x + w, y + h), (0,0,255), 2)
     cv2.imwrite("output.jpg", colored)
     return filtered_boxes, indices

@@ -97,14 +97,20 @@ def evaluate(
 
         for agent in env.agent_iter():
             obs, reward, termination, truncation, info = env.last()
-            #data_generator.generate_one_data_point(env,step_count)
+
+            if (step_count >= 0 and step_count<1000):
+                data_generator.generate_one_data_point(env,agent,obs,step_count)
             #dg.draw_zombie_positions(env)
             #dg.draw_detected_zombies(env)
-
-            boxes, indices = tm.find_zombies(obs)
+            #print(obs.shape)
+            '''boxes, indices = tm.find_zombies(obs)
             print(boxes)
             print(indices)
-            #print(obs)
+            obs1 = env.observe("archer_0")
+            print(obs1.shape)
+            print(obs.shape)'''
+            #tm.find_zombies(obs)
+
 
             step_count += 1
 

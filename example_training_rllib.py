@@ -23,7 +23,7 @@ from submission_example_rllib import CustomWrapper
 
 
 
-def algo_config(id_env, policies, policies_to_train):
+def algo_config(id_env, policies, policies_to_train, max_zombies):
 
 
     config = (
@@ -42,7 +42,8 @@ def algo_config(id_env, policies, policies_to_train):
         .rl_module(
             rl_module_spec=MultiRLModuleSpec(
                 rl_module_specs={
-                    x: RLModuleSpec(module_class=PPOTorchRLModule, model_config={"fcnet_hiddens": [64, 64]})
+                    x: RLModuleSpec(module_class=PPOTorchRLModule, model_config={"fcnet_hiddens": [64, 64],
+                                                                                 "fcnet_input_shape": (max_zombies,2)})
                     if x in policies_to_train
                     else
                     RLModuleSpec(module_class=RandomRLModule)
@@ -75,7 +76,7 @@ def training(env, checkpoint_path, max_iterations = 500):
     # Define the configuration for the PPO algorithm
     policies = [x for x in env.agents]
     policies_to_train = policies
-    config = algo_config(id_env, policies, policies_to_train)
+    config = algo_config(id_env, policies, policies_to_train, env.unwrapped.max_zombies)
 
     # Train the model
     algo = config.build()
