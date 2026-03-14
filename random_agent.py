@@ -20,7 +20,7 @@ class CustomWrapper(BaseWrapper):
 
     def observe(self, agent: AgentID) -> ObsType | None:
         #obs = self.env.unwrapped.observe(agent)
-        obs = self.observe(agent)
+        obs = self.env.unwrapped.observe(agent)
         return obs
 
 

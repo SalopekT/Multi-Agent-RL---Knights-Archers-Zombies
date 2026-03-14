@@ -21,7 +21,7 @@ def extract_zombie_coords(all_positions): #all_positions is global game state
             w_bbox = 29.0/1280
             h_bbox = 31.0/720
             x = object[7]+w_bbox
-            y = object[6]+h_bbox
+            y = object[8]+h_bbox
             zombie_normalized_coords = [x,y,w_bbox,h_bbox]
             all_zombies.append(zombie_normalized_coords)
     return np.array(all_zombies)
@@ -35,8 +35,8 @@ def extract_teammate_coords(all_positions):
     for object in all_positions:
         '''if object[5]==1:
             print(object[7],object[8])'''
-        if object[1]==1 and (object[6]!=0.0 or object[7]!=0.0):
-            return np.array([object[7],object[6]])
+        if object[1]==1 and (object[7]!=0.0 or object[8]!=0.0):
+            return np.array([object[7],object[8]])
 
 #this function is just to draw circles on zombie positions and storing to an image(not really neccessary)
 def draw_zombie_positions(env : Any):
@@ -77,11 +77,11 @@ def draw_detected_zombies(env : Any):
 
 class DataGenerator:
     def __init__(self):
-        self._counter = 2
+        self._counter = 5
 
     #https://docs.ultralytics.com/datasets/#steps-to-contribute-a-new-dataset
     #generates for each frame an image and a txt file which describes zombie positions(need this for yolo training)
-    '''def generate_one_data_point(self,env : Any, agent, obs, step):
+    def generate_one_data_point(self,env : Any, agent, obs, step):
         #state is a global state
         curr_state = env.state()
 
@@ -102,8 +102,11 @@ class DataGenerator:
                     with open(f"dataset\\labels\\train\\img{self._counter}.txt", "a") as f:
                         f.write(f"0 {zombie[0]} {zombie[1]} {zombie[2]} {zombie[3]}\n") 
             if teammate is not None:
-                with open(f"dataset\\labels\\train\\img{self._counter}.txt", "a") as f:
-                        f.write(f"1 {teammate[0]} {teammate[1]} 0.03 0.03\n")
+                pixel_x_diff = 1280*teammate[0]
+                pixel_y_diff = 720*teammate[1]
+                if abs(pixel_x_diff)<249 and abs(pixel_y_diff) < 249:
+                    with open(f"dataset\\labels\\train\\img{self._counter}.txt", "a") as f:
+                            f.write(f"1 {teammate[0]} {teammate[1]} 0.03 0.03\n")
         else:
             for zombie in zombie_coords:
                 pixel_x_diff = 1280*zombie[0]
@@ -112,7 +115,10 @@ class DataGenerator:
                     with open(f"dataset\\labels\\val\\img{self._counter}.txt", "a") as f:
                         f.write(f"0 {zombie[0]} {zombie[1]} {zombie[2]} {zombie[3]}\n")
             if teammate is not None:
-                with open(f"dataset\\labels\\val\\img{self._counter}.txt", "a") as f:
+                pixel_x_diff = 1280*teammate[0]
+                pixel_y_diff = 720*teammate[1]
+                if abs(pixel_x_diff)<249 and abs(pixel_y_diff) < 249:
+                    with open(f"dataset\\labels\\val\\img{self._counter}.txt", "a") as f:
                         f.write(f"1 {teammate[0]} {teammate[1]} 0.03 0.03\n")
 
         #data is the pixels on the screen
@@ -167,9 +173,9 @@ class DataGenerator:
 
         if (step==0):
             img = Image.fromarray(black_img, mode='RGB')
-            img.save('rgb.png')'''
+            img.save('rgb.png')
     
-    def generate_one_data_point(self,env : Any, agent, obs, step):
+    '''def generate_one_data_point(self,env : Any, agent, obs, step):
         zombie_coords = extract_zombie_coords(obs)
         print(zombie_coords)
         #print(curr_state.shape)
@@ -211,7 +217,7 @@ class DataGenerator:
         img.save('rgb.png')
         if (step==0):
             img = Image.fromarray(data, mode='RGB')
-            img.save('rgb.png')
+            img.save('rgb.png')'''
 
 def main():
     print("Hello")
