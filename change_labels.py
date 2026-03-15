@@ -1,6 +1,6 @@
 import os
 
-label_folder = "C:\Users\tinsa\KULeuven\ml-project-2025-2026-main\ml-project-2025-2026-main\dataset\labels\train" 
+label_folder = "C:\\Users\\tinsa\\KULeuven\\ml-project-2025-2026-main\\ml-project-2025-2026-main\\dataset\\labels\\train" 
 
 for filename in os.listdir(label_folder):
     if filename.endswith(".txt"):
@@ -22,8 +22,8 @@ for filename in os.listdir(label_folder):
                 h = parts[4]
 
                 # convert coordinates
-                x = (((x*1280) / 256 ) + 1) /2
-                y = (((y*720) / 256 ) + 1) /2
+                x = max(0, min(1, (((x*1280)/256)+1)/2))
+                y = max(0, min(1, (((y*720)/256)+1)/2))
 
                 new_line = f"{cls} {x} {y} {w} {h}\n"
                 new_lines.append(new_line)

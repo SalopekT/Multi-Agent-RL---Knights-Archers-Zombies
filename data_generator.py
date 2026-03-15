@@ -20,8 +20,8 @@ def extract_zombie_coords(all_positions): #all_positions is global game state
         if object[0]==1:
             w_bbox = 29.0/1280
             h_bbox = 31.0/720
-            x = object[7]+w_bbox
-            y = object[8]+h_bbox
+            x = object[7]
+            y = object[8]
             zombie_normalized_coords = [x,y,w_bbox,h_bbox]
             all_zombies.append(zombie_normalized_coords)
     return np.array(all_zombies)
@@ -58,26 +58,27 @@ def draw_zombie_positions(env : Any):
         return
 
 #this function draws DETECTED zombie positions
-def draw_detected_zombies(env : Any):
-    model = YOLO("weights_vision/best(3).pt")
-    frame = pygame.surfarray.array3d(env.unwrapped.screen)
-    frame = np.swapaxes(frame,0,1)
-    pil_image = Image.fromarray(frame,mode='RGB')
-    results = model.predict(frame,verbose=False)
+def draw_detected_zombies(obs):
+    model = YOLO("weights_vision2/best(4).pt")
+    '''frame = pygame.surfarray.array3d(env.unwrapped.screen)
+    frame = np.swapaxes(frame,0,1)'''
+    pil_image = Image.fromarray(obs,mode='RGB')
+    results = model.predict(obs,verbose=False)
     b_boxes = results[0].boxes.xywh
+    print(len(results[0].boxes))
     for b_box in b_boxes:
         real_center_x = b_box[0]+15
         real_center_y = b_box[1]+15
 
         draw = ImageDraw.Draw(pil_image)
         draw.ellipse([real_center_x-5,real_center_y-5,real_center_x+5,real_center_y+5],fill ="#ffff33", outline ="red")
-    #pil_image.save("zombie_detection_shown.jpg")
+    pil_image.save("zombie_detection_shown.jpg")
     
 
 
 class DataGenerator:
     def __init__(self):
-        self._counter = 5
+        self._counter = 4
 
     #https://docs.ultralytics.com/datasets/#steps-to-contribute-a-new-dataset
     #generates for each frame an image and a txt file which describes zombie positions(need this for yolo training)
@@ -104,9 +105,11 @@ class DataGenerator:
             if teammate is not None:
                 pixel_x_diff = 1280*teammate[0]
                 pixel_y_diff = 720*teammate[1]
-                if abs(pixel_x_diff)<249 and abs(pixel_y_diff) < 249:
+                if abs(pixel_x_diff)<256 and abs(pixel_y_diff) < 256:
                     with open(f"dataset\\labels\\train\\img{self._counter}.txt", "a") as f:
                             f.write(f"1 {teammate[0]} {teammate[1]} 0.03 0.03\n")
+            with open(f"dataset\\labels\\train\\img{self._counter}.txt", "a") as f:
+                            f.write(f"1 0 0 0.03 0.03\n")
         else:
             for zombie in zombie_coords:
                 pixel_x_diff = 1280*zombie[0]
@@ -117,9 +120,11 @@ class DataGenerator:
             if teammate is not None:
                 pixel_x_diff = 1280*teammate[0]
                 pixel_y_diff = 720*teammate[1]
-                if abs(pixel_x_diff)<249 and abs(pixel_y_diff) < 249:
+                if abs(pixel_x_diff)<256 and abs(pixel_y_diff) < 256:
                     with open(f"dataset\\labels\\val\\img{self._counter}.txt", "a") as f:
                         f.write(f"1 {teammate[0]} {teammate[1]} 0.03 0.03\n")
+            with open(f"dataset\\labels\\val\\img{self._counter}.txt", "a") as f:
+                            f.write(f"1 0 0 0.03 0.03\n")
 
         #data is the pixels on the screen
         #https://stackoverflow.com/questions/19982760/get-numpy-array-from-pygame
@@ -131,7 +136,7 @@ class DataGenerator:
         data = np.swapaxes(data,0,1)
         print(data.shape)
         own_pixel_x = int(own[0] * 1280)
-        own_pixel_y = int(own[1] * 780)
+        own_pixel_y = int(own[1] * 720)
 
         left   = own_pixel_x - 256
         right  = own_pixel_x + 256
@@ -141,7 +146,7 @@ class DataGenerator:
         crop_left  = max(0, left)
         crop_top   = max(0, top)
         crop_right = min(1280, right)
-        crop_bottom= min(780, bottom)
+        crop_bottom= min(720, bottom)
 
         paste_x = max(0, -left)
         paste_y = max(0, -top)
