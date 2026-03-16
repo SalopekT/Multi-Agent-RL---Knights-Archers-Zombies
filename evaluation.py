@@ -21,6 +21,7 @@ from typing import Any, Callable, Dict, List, Optional
 import numpy as np
 import pygame
 from PIL import Image
+import cv2
 
 import data_generator as dg
 import template_matching as tm
@@ -99,9 +100,24 @@ def evaluate(
             obs, reward, termination, truncation, info = env.last()
             #print(obs.shape)
 
-            if (step_count<3000*20):
+            '''if (step_count<3000*20):
                 if step_count%20==0:
-                    data_generator.generate_one_data_point(env,agent,obs,step_count)
+                    data_generator.generate_one_data_point(env,agent,obs,step_count)'''
+            if step_count==0:
+                padded_image = cv2.copyMakeBorder(
+                    env.state(),
+                    top=256, bottom=256,
+                    left=256, right=256,
+                    borderType=cv2.BORDER_CONSTANT,
+                    value=[0,0,0]  # black color
+                )
+                print(obs.shape)
+                print(padded_image.shape)
+                minLoc = tm.observations_matching(obs,padded_image)
+                cv2.circle(padded_image, (minLoc[0],minLoc[1]), 5, (0,0,255), -1)
+                cv2.imwrite("obs_image.png", obs)
+                cv2.imwrite("state_image.png", padded_image)
+                print(minLoc)
             #dg.draw_zombie_positions(env)
             #dg.draw_detected_zombies(obs)
             #print(obs.shape)

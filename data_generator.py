@@ -20,8 +20,8 @@ def extract_zombie_coords(all_positions): #all_positions is global game state
         if object[0]==1:
             w_bbox = 29.0/1280
             h_bbox = 31.0/720
-            x = object[7]
-            y = object[8]
+            x = object[6]
+            y = object[7]
             zombie_normalized_coords = [x,y,w_bbox,h_bbox]
             all_zombies.append(zombie_normalized_coords)
     return np.array(all_zombies)
@@ -85,46 +85,51 @@ class DataGenerator:
     def generate_one_data_point(self,env : Any, agent, obs, step):
         #state is a global state
         curr_state = env.state()
+        #obs = env.state()
 
         #print(agent_obs)
-        zombie_coords = extract_zombie_coords(obs)
+        zombie_coords = extract_zombie_coords(curr_state)
         #print(zombie_coords)
-        own = extract_own_coordinates(obs)
+        #own = extract_own_coordinates(obs)
         #print(own)
-        teammate = extract_teammate_coords(obs)
+        #teammate = extract_teammate_coords(obs)
         #print(teammate)
 
         train_or_val = random.randint(1,10)
         if train_or_val > 2:
             for zombie in zombie_coords:
-                pixel_x_diff = 1280*zombie[0]
+                '''pixel_x_diff = 1280*zombie[0]
                 pixel_y_diff = 720*zombie[1]
                 if (abs(pixel_x_diff)<256 and abs(pixel_y_diff)<256):
                     with open(f"dataset\\labels\\train\\img{self._counter}.txt", "a") as f:
-                        f.write(f"0 {zombie[0]} {zombie[1]} {zombie[2]} {zombie[3]}\n") 
-            if teammate is not None:
+                        f.write(f"0 {zombie[0]} {zombie[1]} {zombie[2]} {zombie[3]}\n")'''
+                with open(f"dataset2\\labels\\train\\img{self._counter}.txt", "a") as f:
+                        f.write(f"0 {zombie[0]} {zombie[1]} {zombie[2]} {zombie[3]}\n")
+            '''if teammate is not None:
                 pixel_x_diff = 1280*teammate[0]
                 pixel_y_diff = 720*teammate[1]
                 if abs(pixel_x_diff)<256 and abs(pixel_y_diff) < 256:
                     with open(f"dataset\\labels\\train\\img{self._counter}.txt", "a") as f:
                             f.write(f"1 {teammate[0]} {teammate[1]} 0.03 0.03\n")
             with open(f"dataset\\labels\\train\\img{self._counter}.txt", "a") as f:
-                            f.write(f"1 0 0 0.03 0.03\n")
+                            f.write(f"1 0 0 0.03 0.03\n")'''
         else:
             for zombie in zombie_coords:
                 pixel_x_diff = 1280*zombie[0]
                 pixel_y_diff = 720*zombie[1]
-                if (abs(pixel_x_diff)<256 and abs(pixel_y_diff)<256):
+                '''if (abs(pixel_x_diff)<256 and abs(pixel_y_diff)<256):
                     with open(f"dataset\\labels\\val\\img{self._counter}.txt", "a") as f:
+                        f.write(f"0 {zombie[0]} {zombie[1]} {zombie[2]} {zombie[3]}\n")'''
+                with open(f"dataset2\\labels\\val\\img{self._counter}.txt", "a") as f:
                         f.write(f"0 {zombie[0]} {zombie[1]} {zombie[2]} {zombie[3]}\n")
-            if teammate is not None:
+            '''if teammate is not None:
                 pixel_x_diff = 1280*teammate[0]
                 pixel_y_diff = 720*teammate[1]
                 if abs(pixel_x_diff)<256 and abs(pixel_y_diff) < 256:
                     with open(f"dataset\\labels\\val\\img{self._counter}.txt", "a") as f:
                         f.write(f"1 {teammate[0]} {teammate[1]} 0.03 0.03\n")
             with open(f"dataset\\labels\\val\\img{self._counter}.txt", "a") as f:
-                            f.write(f"1 0 0 0.03 0.03\n")
+                            f.write(f"1 0 0 0.03 0.03\n")'''
 
         #data is the pixels on the screen
         #https://stackoverflow.com/questions/19982760/get-numpy-array-from-pygame
@@ -134,7 +139,12 @@ class DataGenerator:
         ##
         data = pygame.surfarray.array3d(env.unwrapped.screen)
         data = np.swapaxes(data,0,1)
-        print(data.shape)
+        img = Image.fromarray(data,mode = 'RGB')
+        if train_or_val > 2:
+            img.save(f"dataset2\\images\\train\\img{self._counter}.jpeg")
+        else:
+            img.save(f"dataset2\\images\\val\\img{self._counter}.jpeg")
+        '''print(data.shape)
         own_pixel_x = int(own[0] * 1280)
         own_pixel_y = int(own[1] * 720)
 
@@ -165,7 +175,7 @@ class DataGenerator:
             img.save(f"dataset\\images\\train\\img{self._counter}.jpeg")
         else:
             img = Image.fromarray(black_img, mode='RGB')
-            img.save(f"dataset\\images\\val\\img{self._counter}.jpeg")
+            img.save(f"dataset\\images\\val\\img{self._counter}.jpeg")'''
 
         self._counter+=6
 
@@ -177,7 +187,6 @@ class DataGenerator:
         
 
         if (step==0):
-            img = Image.fromarray(black_img, mode='RGB')
             img.save('rgb.png')
     
     '''def generate_one_data_point(self,env : Any, agent, obs, step):

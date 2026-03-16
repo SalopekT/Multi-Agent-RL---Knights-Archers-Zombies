@@ -11,6 +11,7 @@ from pathlib import Path
 from ray.rllib.core.rl_module import MultiRLModule
 import torch
 import numpy as np
+import cv2
 
 class CustomWrapper(BaseWrapper):
     """
@@ -25,14 +26,20 @@ class CustomWrapper(BaseWrapper):
     def observe(self, agent: AgentID) -> ObsType | None:
         max_zombies = self.env.unwrapped.max_zombies
         obs = self.env.unwrapped.observe(agent)
-        obs_img = obs.astype(np.uint8)
-        d = CustomZombieDetectorFunction(self.env)
-        boxes = d(obs_img)
-
-        while len(boxes) < max_zombies:
-            boxes.append([-1,-1])
+        state = self.env.state()
+        padded_image = cv2.copyMakeBorder(
+                    state,
+                    top=256, bottom=256,
+                    left=256, right=256,
+                    borderType=cv2.BORDER_CONSTANT,
+                    value=[0,0,0]
+        )
         
-        return boxes
+        minLoc = tm.observations_matching(obs,padded_image)
+        
+
+
+        return obs
 
 
 class CustomPredictFunction(Callable):
@@ -62,8 +69,7 @@ class CustomZombieDetectorFunction(Callable):
     """
 
     def __init__(self, env: gymnasium.Env):
-        #self._model =  YOLO("weights_vision/best(3).pt")
-        pass
+        self._model =  YOLO("weights_vision3/best (5).pt")
 
     def __call__(self, observation, *args, **kwargs):
         """Returns a matrix of shape (nb_zombies, nb_attributes), where

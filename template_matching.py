@@ -53,3 +53,13 @@ def find_zombies(frame):
             cv2.rectangle(colored, (x,y), (x + w, y + h), (0,0,255), 2)
     cv2.imwrite("output.jpg", colored)
     return filtered_boxes, indices
+
+
+def observations_matching(obs, state): #finds where in the image is a player
+    gray_state = cv2.cvtColor(state.astype('uint8'), cv2.COLOR_BGR2GRAY)
+    gray_obs   = cv2.cvtColor(obs.astype('uint8'), cv2.COLOR_BGR2GRAY)
+
+    result = cv2.matchTemplate(gray_state, gray_obs, cv2.TM_SQDIFF)
+    height, width = obs.shape[:2]
+    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+    return [min_loc[0]+256,min_loc[1]+256]
