@@ -36,6 +36,8 @@ class CustomWrapper(BaseWrapper):
         )
         
         minLoc = tm.observations_matching(obs,padded_image)
+        boxes = CustomZombieDetectorFunction(state)
+        
         
 
 
@@ -89,9 +91,11 @@ class CustomZombieDetectorFunction(Callable):
         
         
         matrix = []
-        boxes, indices = tm.find_zombies(observation)
-        
+        #boxes, indices = tm.find_zombies(observation)
+        results = self._model.predict(observation, imgsz=416) 
+        boxes = results[0].boxes
         for box in boxes:
-            matrix.append(box)
+            matrix.append(box.xywh[0])
+        
         return matrix
 

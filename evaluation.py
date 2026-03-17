@@ -103,7 +103,7 @@ def evaluate(
             '''if (step_count<3000*20):
                 if step_count%20==0:
                     data_generator.generate_one_data_point(env,agent,obs,step_count)'''
-            if step_count==0:
+            '''if step_count==0:
                 padded_image = cv2.copyMakeBorder(
                     env.state(),
                     top=256, bottom=256,
@@ -117,7 +117,7 @@ def evaluate(
                 cv2.circle(padded_image, (minLoc[0],minLoc[1]), 5, (0,0,255), -1)
                 cv2.imwrite("obs_image.png", obs)
                 cv2.imwrite("state_image.png", padded_image)
-                print(minLoc)
+                print(minLoc)'''
             #dg.draw_zombie_positions(env)
             #dg.draw_detected_zombies(obs)
             #print(obs.shape)

@@ -84,6 +84,7 @@ class DataGenerator:
     #generates for each frame an image and a txt file which describes zombie positions(need this for yolo training)
     def generate_one_data_point(self,env : Any, agent, obs, step):
         #state is a global state
+        #when calling env.state() in vectorized mode i get global position
         curr_state = env.state()
         #obs = env.state()
 
