@@ -99,7 +99,9 @@ def evaluate(
         for agent in env.agent_iter():
             obs, reward, termination, truncation, info = env.last()
             #print(obs.shape)
-
+            obs_small = env.unwrapped.observe(agent)
+            '''img = Image.fromarray(obs_small,mode = 'RGB')
+            img.save('proof.png')'''
             '''if (step_count<3000*20):
                 if step_count%20==0:
                     data_generator.generate_one_data_point(env,agent,obs,step_count)'''

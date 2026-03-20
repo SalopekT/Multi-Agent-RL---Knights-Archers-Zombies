@@ -19,9 +19,11 @@ class CustomWrapper(BaseWrapper):
     """
 
     def observation_space(self, agent: AgentID) -> gymnasium.spaces.Space:
-        max_zombies = self.env.unwrapped.max_zombies
+        return spaces.flatten_space(super().observation_space(agent))
+
+        '''max_zombies = self.env.unwrapped.max_zombies
         box = spaces.Box(low=-1, high=512, shape=(max_zombies,2), dtype=np.int8)
-        return box
+        return box'''
 
     def observe(self, agent: AgentID) -> ObsType | None:
         max_zombies = self.env.unwrapped.max_zombies
@@ -36,18 +38,39 @@ class CustomWrapper(BaseWrapper):
         )
         
         minLoc = tm.observations_matching(obs,padded_image)
-        boxes = CustomZombieDetectorFunction(state)
-        
-        
+        if agent == "archer_0":
+            cv2.circle(padded_image, (minLoc[0],minLoc[1]), 5, (0,0,255), -1)
+            detector = CustomZombieDetectorFunction(self.env)
+            boxes = detector(state)
+            for box in boxes:
+                print(box)
+                x, y, w, h = box
+                zx = x + w // 2 + 256
+                zy = y + h // 2 + 256
+                cv2.circle(padded_image, (int(zx), int(zy)), 5, (255, 0, 0), -1)
+            
+            cv2.imwrite("obs_image.png", obs)
+            cv2.imwrite("state_image.png", padded_image)
 
+            x, y = minLoc
+            x+=20
+            y+=20
+            crop_size = 36
+            half = crop_size // 2
+            x1 = max(x - half, 0)
+            y1 = max(y - half, 0)
+            x2 = x + half
+            y2 = y + half
+            player_crop = padded_image[y1:y2, x1:x2].copy()
+            cv2.imwrite("player_crop.png", player_crop)
 
-        return obs
+        return state
 
 
 class CustomPredictFunction(Callable):
     """Function to use to load the trained model and predict the action"""
 
-    def __init__(self, env):
+    '''def __init__(self, env):
 
         # Here you should load your trained model(s) from a checkpoint in your folder
         best_checkpoint = (Path("results") / "learner_group" / "learner" / "rl_module").resolve()
@@ -62,7 +85,13 @@ class CustomPredictFunction(Callable):
             fwd_outputs["action_dist_inputs"]
         )
         action = action_dist.sample()[0].numpy()
-        return action
+        return action'''
+    
+    def __init__(self, env):
+        self.env = env
+
+    def __call__(self, observation, agent, *args, **kwargs):
+        return self.env.action_space(agent).sample()
 
 
 class CustomZombieDetectorFunction(Callable):
@@ -89,10 +118,14 @@ class CustomZombieDetectorFunction(Callable):
             real_center_y = b_box[1]+15
             matrix.append(real_center_x,real_center_y,30,30)'''
         
-        
+        img = observation.astype(np.uint8)
+
+        # Convert BGR → RGB if using OpenCV
+        if img.shape[2] == 3:  # 3 channels
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         matrix = []
         #boxes, indices = tm.find_zombies(observation)
-        results = self._model.predict(observation, imgsz=416) 
+        results = self._model.predict(img, imgsz=416) 
         boxes = results[0].boxes
         for box in boxes:
             matrix.append(box.xywh[0])
