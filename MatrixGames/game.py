@@ -194,9 +194,20 @@ class LenientBoltzmannPlayer(Player):
           super().__init__(game, i)
           self._temperature = temperature
           self._leniency = leniency
-          self._last_N_rewards = []
-          self._last_N_moves = []
+          '''self._last_N_rewards = []
+          self._last_N_moves = []'''
+          self._last_N_rewards = {}
+          for action in range(len(game.A)):
+               self._last_N_rewards[action] = []
 
+          q1 = random.randint(1,10)
+          q2 = random.randint(1,10)
+          self._q_table = [q1,q2]
+
+    @property 
+    def temperature(self): 
+	     return self._temperature
+    
     def exp_list_temp(self,l):
         result = []
         for el in l:
@@ -216,22 +227,18 @@ class LenientBoltzmannPlayer(Player):
         return move
     
     def add_reward(self,reward,move):
-        if len(self._last_N_rewards) < self._leniency:
-            self._last_N_rewards.append(reward)
-            self._last_N_moves.append(move)
-        else:
-            self._last_N_rewards.pop(0)
-            self._last_N_rewards.append(reward)
-            self._last_N_moves.pop(0)
-            self._last_N_moves.append(move)
+        if len(self._last_N_rewards[move]) < self._leniency:
+            self._last_N_rewards[move].append(reward)
+
+    def clear_rewards(self,move):
+         self._last_N_rewards[move].clear()
     
     def q_learning_update(self, move, utility, alpha):
         self.add_reward(utility,move)
-        if len(self._last_N_rewards) < self._leniency:
-             return
-        max_reward = max(self._last_N_rewards)
-        max_move = self._last_N_moves[self._last_N_rewards.index(max_reward)]
-        self._q_table[max_move] = self._q_table[max_move]+alpha*(max_reward-self._q_table[max_move])
+        if len(self._last_N_rewards[move])==self._leniency:
+            max_reward = max(self._last_N_rewards[move])
+            self._q_table[move] = self._q_table[move]+alpha*(max_reward-self._q_table[move])
+            self.clear_rewards(move)
 
 
      
