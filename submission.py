@@ -27,9 +27,22 @@ class CustomWrapper(BaseWrapper):
 
     def observe(self, agent: AgentID) -> ObsType | None:
         max_zombies = self.env.unwrapped.max_zombies
-        obs = self.env.unwrapped.observe(agent)
+        #obs = self.env.unwrapped.observe(agent)
+        obs = self.env.observe(agent)
         state = self.env.state()
-        padded_image = cv2.copyMakeBorder(
+
+        archers = list(self.env.unwrapped.archer_list)
+        if (agent == "archer_0"):
+            own_pos = archers[0].rect.center
+            teammate_pos = archers[1].rect.center
+        else:
+            own_pos = archers[1].rect.center
+            teammate_pos = archers[0].rect.center
+        x, y = own_pos
+
+        crop = obs[y-15:y+15, x-15:x+15]
+        
+        '''padded_image = cv2.copyMakeBorder(
                     state,
                     top=256, bottom=256,
                     left=256, right=256,
@@ -64,7 +77,7 @@ class CustomWrapper(BaseWrapper):
             player_crop = padded_image[y1:y2, x1:x2].copy()
             cv2.imwrite("player_crop.png", player_crop)
 
-        return state
+        return state'''
 
 
 class CustomPredictFunction(Callable):

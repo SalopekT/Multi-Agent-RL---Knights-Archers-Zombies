@@ -45,7 +45,7 @@ def create_environment(
         num_knights=0,
         max_zombies=max_zombies,
         vector_state=not visual_observation,
-        use_typemasks = True,
+        use_typemasks = False,
         render_mode= "rgb_array" # We will handle rendering in VisualWrapper, not here
     )
 

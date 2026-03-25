@@ -19,7 +19,7 @@ class CustomWrapper(BaseWrapper):
         return spaces.flatten_space(super().observation_space(agent))
 
     def observe(self, agent: AgentID) -> ObsType | None:
-        obs = self.env.unwrapped.observe(agent)
+        obs = self.env.observe(agent)
         '''img = Image.fromarray(obs,mode = 'RGB')
         img.save('proof.png')'''
         #obs = self.env.observe(agent)

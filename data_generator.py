@@ -78,7 +78,7 @@ def draw_detected_zombies(obs):
 
 class DataGenerator:
     def __init__(self):
-        self._counter = 4
+        self._counter = 0
 
     #https://docs.ultralytics.com/datasets/#steps-to-contribute-a-new-dataset
     #generates for each frame an image and a txt file which describes zombie positions(need this for yolo training)
@@ -233,6 +233,10 @@ class DataGenerator:
         if (step==0):
             img = Image.fromarray(data, mode='RGB')
             img.save('rgb.png')'''
+    
+    def generate_angle_data(self,env : Any, agent, obs, step):
+         curr_state = env.state()
+         
 
 def main():
     print("Hello")

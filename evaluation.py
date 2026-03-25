@@ -100,6 +100,35 @@ def evaluate(
             obs, reward, termination, truncation, info = env.last()
             #print(obs.shape)
             obs_small = env.unwrapped.observe(agent)
+            print("obs shape:", obs.shape)
+            archers = list(env.unwrapped.archer_list)
+            if (agent == "archer_0"):
+                own_pos = archers[0].rect.center
+                teammate_pos = archers[1].rect.center
+            else:
+                own_pos = archers[1].rect.center
+                teammate_pos = archers[0].rect.center
+            print("own_pos:", own_pos)
+            h, w = obs.shape[:2]
+            x, y = own_pos
+
+            x1 = max(0, x - 15)
+            x2 = min(w, x + 15)
+            y1 = max(0, y - 15)
+            y2 = min(h, y + 15)
+
+            crop = obs[y1:y2, x1:x2]
+
+            # pad if needed
+            pad_y = 20 - crop.shape[0]
+            pad_x = 20 - crop.shape[1]
+
+            if pad_y > 0 or pad_x > 0:
+                crop = np.pad(crop,
+                            ((0, pad_y), (0, pad_x), (0, 0)),
+                            mode='constant')
+            img = Image.fromarray(crop)
+            img.save("crop.png")
             '''img = Image.fromarray(obs_small,mode = 'RGB')
             img.save('proof.png')'''
             '''if (step_count<3000*20):
