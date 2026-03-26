@@ -234,8 +234,53 @@ class DataGenerator:
             img = Image.fromarray(data, mode='RGB')
             img.save('rgb.png')'''
     
-    def generate_angle_data(self,env : Any, agent, obs, step):
-         curr_state = env.state()
+    def generate_angle_data(self,env : Any, obs, step):
+         data_own = []
+         for object in obs:
+             if np.isscalar(object[5]) and object[5]==1:
+                 x_own = object[7]
+                 y_own = object[8]
+                 x_own = int(x_own * 1280)+15
+                 y_own = int(y_own * 720)+15
+                 x_heading = object[9]
+                 y_heading = object[10]
+                 data_own = [x_own,y_own,x_heading,y_heading]
+
+                 data_full_screen = pygame.surfarray.array3d(env.unwrapped.screen)
+                 data_full_screen = np.swapaxes(data_full_screen,0,1)
+
+                 x_min = x_own - 15
+                 x_max = x_own + 16
+                 y_min = y_own - 15
+                 y_max = y_own + 16
+
+                 x_min = max(0, x_min)
+                 x_max = min(1280, x_max)
+                 y_min = max(0, y_min)
+                 y_max = min(720, y_max)
+
+                 crop = data_full_screen[y_min:y_max, x_min:x_max, :]
+                 '''h, w, _ = crop.shape
+
+                 pad_h = max(0, 15 - h)
+                 pad_w = max(0, 15 - w)
+
+                 pad_top = pad_h // 2
+                 pad_bottom = pad_h - pad_top
+
+                 pad_left = pad_w // 2
+                 pad_right = pad_w - pad_left
+                 crop = np.pad(
+                    crop,
+                    ((pad_top, pad_bottom), (pad_left, pad_right), (0, 0)),
+                    mode='constant',
+                    constant_values=0
+                )'''
+                 img = Image.fromarray(crop.astype(np.uint8))
+                 img.save("test_crop.png")
+
+
+         return data_own
          
 
 def main():
