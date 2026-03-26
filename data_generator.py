@@ -79,6 +79,8 @@ def draw_detected_zombies(obs):
 class DataGenerator:
     def __init__(self):
         self._counter = 0
+        self.images = []
+        self.labels = []
 
     #https://docs.ultralytics.com/datasets/#steps-to-contribute-a-new-dataset
     #generates for each frame an image and a txt file which describes zombie positions(need this for yolo training)
@@ -235,6 +237,11 @@ class DataGenerator:
             img.save('rgb.png')'''
     
     def generate_angle_data(self,env : Any, obs, step):
+         print(self._counter)
+         if self._counter==5000:
+             images = np.array(self.images)
+             labels = np.array(self.labels)
+             np.savez("dataset_angles/dataset2.npz", images=images, labels=labels)
          data_own = []
          for object in obs:
              if np.isscalar(object[5]) and object[5]==1:
@@ -248,11 +255,13 @@ class DataGenerator:
 
                  data_full_screen = pygame.surfarray.array3d(env.unwrapped.screen)
                  data_full_screen = np.swapaxes(data_full_screen,0,1)
-
-                 x_min = x_own - 15
-                 x_max = x_own + 16
-                 y_min = y_own - 15
-                 y_max = y_own + 16
+                 
+                 heading = [x_heading,y_heading]
+                 self.labels.append(heading)
+                 x_min = x_own - 20
+                 x_max = x_own + 21
+                 y_min = y_own - 20
+                 y_max = y_own + 21
 
                  x_min = max(0, x_min)
                  x_max = min(1280, x_max)
@@ -260,10 +269,10 @@ class DataGenerator:
                  y_max = min(720, y_max)
 
                  crop = data_full_screen[y_min:y_max, x_min:x_max, :]
-                 '''h, w, _ = crop.shape
+                 h, w, _ = crop.shape
 
-                 pad_h = max(0, 15 - h)
-                 pad_w = max(0, 15 - w)
+                 pad_h = max(0, 20 - h)
+                 pad_w = max(0, 20 - w)
 
                  pad_top = pad_h // 2
                  pad_bottom = pad_h - pad_top
@@ -275,11 +284,12 @@ class DataGenerator:
                     ((pad_top, pad_bottom), (pad_left, pad_right), (0, 0)),
                     mode='constant',
                     constant_values=0
-                )'''
+                )
+                 self.images.append(crop)
                  img = Image.fromarray(crop.astype(np.uint8))
                  img.save("test_crop.png")
 
-
+         self._counter+=1
          return data_own
          
 

@@ -1,11 +1,12 @@
-import data_generator
-from ultralytics import YOLO
-model = YOLO("C:\\Users\\tinsa\\KULeuven\\ml-project-2025-2026-main\\ml-project-2025-2026-main\\weights_vision3\\best (5).pt")
-# Example image
-img_path = "C:\\Users\\tinsa\\KULeuven\\ml-project-2025-2026-main\\ml-project-2025-2026-main\\dataset2\\images\\train\\img4067.jpeg"
+import numpy as np
+data = np.load("dataset_angles/dataset2.npz")
+images = data["images"]
+labels = data["labels"]
 
-# Run inference
-results = model.predict(source=img_path, imgsz=416)
+print(images.shape)
+print(labels.shape)
 
-# Show image with predictions
-results[0].show()
+print(labels[:10])
+
+angles = np.arctan2(labels[:,1], labels[:,0])
+print(np.histogram(angles, bins=8))

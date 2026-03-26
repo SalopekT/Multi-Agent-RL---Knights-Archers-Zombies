@@ -100,8 +100,8 @@ def evaluate(
             obs, reward, termination, truncation, info = env.last()
             #print(obs.shape)
             obs_small = env.unwrapped.observe(agent)
-            print("obs shape:", obs.shape)
-            print(data_generator.generate_angle_data(env,obs,step_count))
+            #print("obs shape:", obs.shape)
+            data_generator.generate_angle_data(env,obs,step_count)
 
 
             '''img = Image.fromarray(obs_small,mode = 'RGB')
@@ -136,7 +136,7 @@ def evaluate(
             #tm.find_zombies(obs)
 
 
-            step_count += 6
+            step_count += 1
 
             # Accumulate rewards for all agents
             for a in env.agents:
