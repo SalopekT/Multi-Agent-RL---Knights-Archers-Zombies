@@ -3,7 +3,6 @@ from typing import Any
 import pygame
 from PIL import Image, ImageDraw
 import random
-from ultralytics import YOLO
 
 def test_examples():
     array = np.load("C:\\Users\\tinsa\\KULeuven\\ml-project-2025-2026-main\\ml-project-2025-2026-main\\observation_data\\example_obs.npy")
@@ -82,7 +81,6 @@ class DataGenerator:
         self.images = []
         self.labels = []
 
-    #https://docs.ultralytics.com/datasets/#steps-to-contribute-a-new-dataset
     #generates for each frame an image and a txt file which describes zombie positions(need this for yolo training)
     def generate_one_data_point(self,env : Any, agent, obs, step):
         #state is a global state
@@ -241,7 +239,7 @@ class DataGenerator:
          if self._counter==5000:
              images = np.array(self.images)
              labels = np.array(self.labels)
-             np.savez("dataset_angles/dataset2.npz", images=images, labels=labels)
+             np.savez("dataset_angles/dataset_test2.npz", images=images, labels=labels)
          data_own = []
          for object in obs:
              if np.isscalar(object[5]) and object[5]==1:

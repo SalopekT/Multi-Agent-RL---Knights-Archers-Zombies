@@ -25,8 +25,11 @@ import cv2
 
 import data_generator as dg
 import template_matching as tm
-
+from rfdetr import RFDETRNano
 from utils import create_environment, iou
+import sys
+
+from ultralytics import YOLO
 
 logger = logging.getLogger("ml-project")
 
@@ -90,19 +93,76 @@ def evaluate(
     start_time = time.time()
 
     data_generator = dg.DataGenerator()
+    net = cv2.dnn.readNet("yolov4-tiny-weights/yolov4-tiny-obj_best(1).weights", "yolov4-tiny-obj.cfg")
+    layer_names = net.getLayerNames()
+    output_layers = [layer_names[i - 1] for i in net.getUnconnectedOutLayers()]
+    classes = ["zombie"]
 
     for i, seed in enumerate(seeds):
         env.reset(seed=seed)
         env.action_space(env.possible_agents[0]).seed(seed)
         step_count = 0
-
+        
         for agent in env.agent_iter():
             obs, reward, termination, truncation, info = env.last()
             #print(obs.shape)
             obs_small = env.unwrapped.observe(agent)
             #print("obs shape:", obs.shape)
-            data_generator.generate_angle_data(env,obs,step_count)
+            #data_generator.generate_angle_data(env,obs,step_count)
 
+            # 4. Prepare the image for YOLO (Standard YOLO-tiny size is 416x416)
+            blob = cv2.dnn.blobFromImage(obs, 1/255, (416, 416), (0,0,0), swapRB=True, crop=False)
+            net.setInput(blob)
+            outputs = net.forward(output_layers)
+
+            conf_threshold = 0.5
+            nms_threshold = 0.4 # Non-Maximum Suppression to remove double-boxes
+            boxes = []
+            confidences = []
+
+            for out in outputs:
+                for detection in out:
+                    scores = detection[5:]
+                    class_id = np.argmax(scores)
+                    confidence = scores[class_id]
+                    
+                    if confidence > conf_threshold:
+                        # Scale coordinates back to 1280x720
+                        center_x = int(detection[0] * 1280)
+                        center_y = int(detection[1] * 720)
+                        w = int(detection[2] * 1280)
+                        h = int(detection[3] * 720)
+                        
+                        # Rectangle coordinates
+                        x = int(center_x - w / 2)
+                        y = int(center_y - h / 2)
+                        
+                        boxes.append([x, y, w, h])
+                        confidences.append(float(confidence))
+
+            # 5. Clean up overlapping boxes
+            indices = cv2.dnn.NMSBoxes(boxes, confidences, conf_threshold, nms_threshold)
+
+            annotated_frame = obs.copy()
+
+            # 2. Draw on the copy
+            for i in indices:
+                # Ensure i is a scalar (OpenCV versions vary on index format)
+                idx = i[0] if isinstance(i, (list, np.ndarray)) else i
+                
+                x, y, w, h = boxes[idx]
+                label = f"Zombie: {confidences[idx]:.2f}"
+                
+                # Draw Green Box (BGR: 0, 255, 0) - Thickness: 3
+                cv2.rectangle(annotated_frame, (x, y), (x + w, y + h), (0, 255, 0), 3)
+                
+                # Draw Label
+                cv2.putText(annotated_frame, label, (x, y - 10), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+
+            # 3. Store the frame
+            # Option A: Overwrite one file (good for a 'live' preview)
+            cv2.imwrite("latest_detection.jpg", annotated_frame)
 
             '''img = Image.fromarray(obs_small,mode = 'RGB')
             img.save('proof.png')'''

@@ -208,3 +208,5 @@ __marimo__/
 
 dataset/
 dataset2/
+
+./yolov4-tiny-weights/

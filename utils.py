@@ -12,7 +12,7 @@ logger = logging.getLogger("ml-project")
 def create_environment(
     max_cycles: int = 2500,
     render_mode: Optional[str] = None,
-    max_zombies: int = 1,
+    max_zombies: int = 4,
     frame_stack: Optional[int] = None,
     resize_dim: Optional[tuple[int, int]] = None,
     distortion_level: int = 0,
@@ -35,7 +35,7 @@ def create_environment(
     # Set parameters
 
     num_agents = 2
-    visual_observation = False
+    visual_observation = True
 
 
     # Create base environment

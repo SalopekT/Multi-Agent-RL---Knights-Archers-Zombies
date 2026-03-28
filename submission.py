@@ -5,7 +5,6 @@ import gymnasium
 from pettingzoo.utils import BaseWrapper
 from pettingzoo.utils.env import AgentID, ObsType
 from PIL import Image
-from ultralytics import YOLO
 import template_matching as tm
 from pathlib import Path
 from ray.rllib.core.rl_module import MultiRLModule
@@ -42,42 +41,7 @@ class CustomWrapper(BaseWrapper):
 
         crop = obs[y-15:y+15, x-15:x+15]
         
-        '''padded_image = cv2.copyMakeBorder(
-                    state,
-                    top=256, bottom=256,
-                    left=256, right=256,
-                    borderType=cv2.BORDER_CONSTANT,
-                    value=[0,0,0]
-        )
         
-        minLoc = tm.observations_matching(obs,padded_image)
-        if agent == "archer_0":
-            cv2.circle(padded_image, (minLoc[0],minLoc[1]), 5, (0,0,255), -1)
-            detector = CustomZombieDetectorFunction(self.env)
-            boxes = detector(state)
-            for box in boxes:
-                print(box)
-                x, y, w, h = box
-                zx = x + w // 2 + 256
-                zy = y + h // 2 + 256
-                cv2.circle(padded_image, (int(zx), int(zy)), 5, (255, 0, 0), -1)
-            
-            cv2.imwrite("obs_image.png", obs)
-            cv2.imwrite("state_image.png", padded_image)
-
-            x, y = minLoc
-            x+=20
-            y+=20
-            crop_size = 36
-            half = crop_size // 2
-            x1 = max(x - half, 0)
-            y1 = max(y - half, 0)
-            x2 = x + half
-            y2 = y + half
-            player_crop = padded_image[y1:y2, x1:x2].copy()
-            cv2.imwrite("player_crop.png", player_crop)
-
-        return state'''
 
 
 class CustomPredictFunction(Callable):
@@ -113,7 +77,9 @@ class CustomZombieDetectorFunction(Callable):
     """
 
     def __init__(self, env: gymnasium.Env):
-        self._model =  YOLO("weights_vision3/best (5).pt")
+        self.net = cv2.dnn.readNet("yolov4-tiny-weights/yolov4-tiny-obj_best(1).weights", "yolov4-tiny-obj.cfg")
+        self.layer_names = self.net.getLayerNames()
+        self.output_layers = [self.layer_names[i - 1] for i in self.net.getUnconnectedOutLayers()]
 
     def __call__(self, observation, *args, **kwargs):
         """Returns a matrix of shape (nb_zombies, nb_attributes), where
@@ -122,26 +88,45 @@ class CustomZombieDetectorFunction(Callable):
         likely to least likely positions. The evaluation uses the first k
         items if there are k zombies on the screen.
         """
-        '''print(observation)
-        results = self._model.predict(observation,verbose=False)
         matrix = []
-        b_boxes = results[0].boxes.xywh
-        for b_box in b_boxes:
-            real_center_x = b_box[0]+15
-            real_center_y = b_box[1]+15
-            matrix.append(real_center_x,real_center_y,30,30)'''
         
-        img = observation.astype(np.uint8)
+        blob = cv2.dnn.blobFromImage(observation, 1/255, (416, 416), (0,0,0), swapRB=True, crop=False)
+        self.net.setInput(blob)
+        outputs = self.net.forward(self.output_layers)
+        conf_threshold = 0.5
+        nms_threshold = 0.4 # Non-Maximum Suppression to remove double-boxes
+        boxes = []
+        confidences = []
 
-        # Convert BGR → RGB if using OpenCV
-        if img.shape[2] == 3:  # 3 channels
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        matrix = []
-        #boxes, indices = tm.find_zombies(observation)
-        results = self._model.predict(img, imgsz=416) 
-        boxes = results[0].boxes
-        for box in boxes:
-            matrix.append(box.xywh[0])
+        for out in outputs:
+            for detection in out:
+                scores = detection[5:]
+                class_id = np.argmax(scores)
+                confidence = scores[class_id]
+                    
+                if confidence > conf_threshold:
+                    center_x = int(detection[0] * 1280)+15
+                    center_y = int(detection[1] * 720)+15
+                    w = int(detection[2] * 1280)
+                    h = int(detection[3] * 720)
+                        
+                        # Rectangle coordinates
+                    x = int(center_x - w / 2)
+                    y = int(center_y - h / 2)
+                        
+                    boxes.append([x, y, w, h])
+                    confidences.append(float(confidence))
+
+        indices = cv2.dnn.NMSBoxes(boxes, confidences, conf_threshold, nms_threshold)
         
+        for i in indices:
+            # This line handles both old (nested) and new (flat) OpenCV versions
+            idx = i[0] if isinstance(i, (list, np.ndarray)) else i
+            
+            # Now use that index to grab the original data
+            x, y, w, h = boxes[idx]
+            conf = confidences[idx]
+            
+            matrix.append([x,y,w,h])
         return matrix
 
