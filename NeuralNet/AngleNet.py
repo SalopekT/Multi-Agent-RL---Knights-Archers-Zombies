@@ -56,8 +56,7 @@ def train(args, model, device, train_loader, optimizer, epoch):
 
         epoch_loss += loss.item() * data.size(0)
     epoch_loss /= len(train_loader.dataset)
-    # ---- Compute angle error on training set ----
-    model.eval()  # switch to evaluation mode
+    model.eval() 
     all_outputs = []
     all_targets = []
     with torch.no_grad():

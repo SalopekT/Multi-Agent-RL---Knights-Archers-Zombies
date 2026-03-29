@@ -11,6 +11,8 @@ from ray.rllib.core.rl_module import MultiRLModule
 import torch
 import numpy as np
 import cv2
+from NeuralNet.AngleNet import AngleNet
+from gymnasium import spaces
 
 class CustomWrapper(BaseWrapper):
     """
@@ -18,8 +20,7 @@ class CustomWrapper(BaseWrapper):
     """
 
     def observation_space(self, agent: AgentID) -> gymnasium.spaces.Space:
-        return spaces.flatten_space(super().observation_space(agent))
-
+        return spaces.Box(low = -1.0, high = 1.0, shape = (3*2+5*3,))
         '''max_zombies = self.env.unwrapped.max_zombies
         box = spaces.Box(low=-1, high=512, shape=(max_zombies,2), dtype=np.int8)
         return box'''
@@ -39,8 +40,60 @@ class CustomWrapper(BaseWrapper):
             teammate_pos = archers[0].rect.center
         x, y = own_pos
 
-        crop = obs[y-15:y+15, x-15:x+15]
+        x_min = x - 20
+        x_max = x + 21
+        y_min = y - 20
+        y_max = y + 21
+                 
+        x_min = max(0, x_min)
+        x_max = min(1280, x_max)
+        y_min = max(0, y_min)
+        y_max = min(720, y_max)
+
+        crop = obs[y_min:y_max, x_min:x_max, :]
+        h, w, _ = crop.shape
+
+        pad_h = max(0, 20 - h)
+        pad_w = max(0, 20 - w)
+
+        pad_top = pad_h // 2
+        pad_bottom = pad_h - pad_top
+
+        pad_left = pad_w // 2
+        pad_right = pad_w - pad_left
+        crop = np.pad(
+            crop,
+            ((max(0, 41-h)//2, max(0, 41-h) - max(0, 41-h)//2),
+            (max(0, 41-w)//2, max(0, 41-w) - max(0, 41-w)//2),
+            (0,0)),
+            mode='constant',
+            constant_values=0
+        )
+        img = Image.fromarray(crop.astype(np.uint8))
+        img.save("test_crop.png")
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        model = AngleNet().to(device)
+        model.load_state_dict(torch.load("./NeuralNet/anglenet2.pth"))
+        model.eval()
+        crop_tensor = ((torch.from_numpy(crop).float()/255.0)-0.5)*2
+        crop_tensor = crop_tensor.permute(2, 0, 1)
+        crop_tensor = crop_tensor.unsqueeze(0) 
         
+        with torch.no_grad():
+            output_infer = model(crop_tensor)
+            output_infer = output_infer.squeeze(0)
+        zombie_detector = CustomZombieDetectorFunction(self.env)
+        zombies = zombie_detector(obs)
+        num_zombies = len(zombies)
+        final_obs = [x*2/1280-1,y*2/720-1,
+                         output_infer[0].item(),output_infer[1].item(),
+                         teammate_pos[0]*2/1280-1,teammate_pos[1]*2/720-1]
+        for i in range(len(zombies)):
+            final_obs.extend([zombies[i][0]*2/1280-1,zombies[i][1]*2/720,1.0])
+        for i in range(5-num_zombies):
+            final_obs.extend([0.0,0.0,-1.0])
+        print(final_obs)
+        return np.array(final_obs)
         
 
 
@@ -110,7 +163,6 @@ class CustomZombieDetectorFunction(Callable):
                     w = int(detection[2] * 1280)
                     h = int(detection[3] * 720)
                         
-                        # Rectangle coordinates
                     x = int(center_x - w / 2)
                     y = int(center_y - h / 2)
                         
@@ -120,10 +172,8 @@ class CustomZombieDetectorFunction(Callable):
         indices = cv2.dnn.NMSBoxes(boxes, confidences, conf_threshold, nms_threshold)
         
         for i in indices:
-            # This line handles both old (nested) and new (flat) OpenCV versions
             idx = i[0] if isinstance(i, (list, np.ndarray)) else i
             
-            # Now use that index to grab the original data
             x, y, w, h = boxes[idx]
             conf = confidences[idx]
             

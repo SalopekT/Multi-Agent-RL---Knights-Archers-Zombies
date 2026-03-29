@@ -29,7 +29,6 @@ from rfdetr import RFDETRNano
 from utils import create_environment, iou
 import sys
 
-from ultralytics import YOLO
 
 logger = logging.getLogger("ml-project")
 
@@ -106,95 +105,9 @@ def evaluate(
         for agent in env.agent_iter():
             obs, reward, termination, truncation, info = env.last()
             #print(obs.shape)
-            obs_small = env.unwrapped.observe(agent)
-            #print("obs shape:", obs.shape)
+            
             #data_generator.generate_angle_data(env,obs,step_count)
-
-            # 4. Prepare the image for YOLO (Standard YOLO-tiny size is 416x416)
-            blob = cv2.dnn.blobFromImage(obs, 1/255, (416, 416), (0,0,0), swapRB=True, crop=False)
-            net.setInput(blob)
-            outputs = net.forward(output_layers)
-
-            conf_threshold = 0.5
-            nms_threshold = 0.4 # Non-Maximum Suppression to remove double-boxes
-            boxes = []
-            confidences = []
-
-            for out in outputs:
-                for detection in out:
-                    scores = detection[5:]
-                    class_id = np.argmax(scores)
-                    confidence = scores[class_id]
-                    
-                    if confidence > conf_threshold:
-                        # Scale coordinates back to 1280x720
-                        center_x = int(detection[0] * 1280)
-                        center_y = int(detection[1] * 720)
-                        w = int(detection[2] * 1280)
-                        h = int(detection[3] * 720)
-                        
-                        # Rectangle coordinates
-                        x = int(center_x - w / 2)
-                        y = int(center_y - h / 2)
-                        
-                        boxes.append([x, y, w, h])
-                        confidences.append(float(confidence))
-
-            # 5. Clean up overlapping boxes
-            indices = cv2.dnn.NMSBoxes(boxes, confidences, conf_threshold, nms_threshold)
-
-            annotated_frame = obs.copy()
-
-            # 2. Draw on the copy
-            for i in indices:
-                # Ensure i is a scalar (OpenCV versions vary on index format)
-                idx = i[0] if isinstance(i, (list, np.ndarray)) else i
-                
-                x, y, w, h = boxes[idx]
-                label = f"Zombie: {confidences[idx]:.2f}"
-                
-                # Draw Green Box (BGR: 0, 255, 0) - Thickness: 3
-                cv2.rectangle(annotated_frame, (x, y), (x + w, y + h), (0, 255, 0), 3)
-                
-                # Draw Label
-                cv2.putText(annotated_frame, label, (x, y - 10), 
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
-
-            # 3. Store the frame
-            # Option A: Overwrite one file (good for a 'live' preview)
-            cv2.imwrite("latest_detection.jpg", annotated_frame)
-
-            '''img = Image.fromarray(obs_small,mode = 'RGB')
-            img.save('proof.png')'''
-            '''if (step_count<3000*20):
-                if step_count%20==0:
-                    data_generator.generate_one_data_point(env,agent,obs,step_count)'''
-            '''if step_count==0:
-                padded_image = cv2.copyMakeBorder(
-                    env.state(),
-                    top=256, bottom=256,
-                    left=256, right=256,
-                    borderType=cv2.BORDER_CONSTANT,
-                    value=[0,0,0]  # black color
-                )
-                print(obs.shape)
-                print(padded_image.shape)
-                minLoc = tm.observations_matching(obs,padded_image)
-                cv2.circle(padded_image, (minLoc[0],minLoc[1]), 5, (0,0,255), -1)
-                cv2.imwrite("obs_image.png", obs)
-                cv2.imwrite("state_image.png", padded_image)
-                print(minLoc)'''
-            #dg.draw_zombie_positions(env)
-            #dg.draw_detected_zombies(obs)
-            #print(obs.shape)
-            '''boxes, indices = tm.find_zombies(obs)
-            print(boxes)
-            print(indices)
-            obs1 = env.observe("archer_0")
-            print(obs1.shape)
-            print(obs.shape)'''
-            #tm.find_zombies(obs)
-
+            
 
             step_count += 1
 

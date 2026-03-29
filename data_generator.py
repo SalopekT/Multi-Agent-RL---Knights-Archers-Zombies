@@ -56,22 +56,6 @@ def draw_zombie_positions(env : Any):
         pil_image.save("zombies_coords_shown.jpg")
         return
 
-#this function draws DETECTED zombie positions
-def draw_detected_zombies(obs):
-    model = YOLO("weights_vision2/best(4).pt")
-    '''frame = pygame.surfarray.array3d(env.unwrapped.screen)
-    frame = np.swapaxes(frame,0,1)'''
-    pil_image = Image.fromarray(obs,mode='RGB')
-    results = model.predict(obs,verbose=False)
-    b_boxes = results[0].boxes.xywh
-    print(len(results[0].boxes))
-    for b_box in b_boxes:
-        real_center_x = b_box[0]+15
-        real_center_y = b_box[1]+15
-
-        draw = ImageDraw.Draw(pil_image)
-        draw.ellipse([real_center_x-5,real_center_y-5,real_center_x+5,real_center_y+5],fill ="#ffff33", outline ="red")
-    pil_image.save("zombie_detection_shown.jpg")
     
 
 

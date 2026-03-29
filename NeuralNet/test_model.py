@@ -31,7 +31,7 @@ def evaluate(model, test_loader, device):
 
 def main():
     # Load first test dataset
-    data0 = np.load("../dataset_angles/dataset_test1.npz")
+    data0 = np.load("../dataset_angles/dataset2.npz")
     images0 = data0['images'].astype(np.float32)   # (N,41,41,3)
     labels0 = data0['labels'].astype(np.float32)   # (N,2)
 
