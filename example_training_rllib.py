@@ -19,11 +19,11 @@ import numpy as np
 import torch
 
 from utils import create_environment
-from submission_example_rllib import CustomWrapper
+from submission import CustomWrapper
 
 
 
-def algo_config(id_env, policies, policies_to_train, max_zombies):
+def algo_config(id_env, policies, policies_to_train):
 
 
     config = (
@@ -42,8 +42,7 @@ def algo_config(id_env, policies, policies_to_train, max_zombies):
         .rl_module(
             rl_module_spec=MultiRLModuleSpec(
                 rl_module_specs={
-                    x: RLModuleSpec(module_class=PPOTorchRLModule, model_config={"fcnet_hiddens": [64, 64],
-                                                                                 "fcnet_input_shape": (max_zombies,2)})
+                    x: RLModuleSpec(module_class=PPOTorchRLModule, model_config={"fcnet_hiddens": [64, 64]})
                     if x in policies_to_train
                     else
                     RLModuleSpec(module_class=RandomRLModule)
@@ -76,13 +75,14 @@ def training(env, checkpoint_path, max_iterations = 500):
     # Define the configuration for the PPO algorithm
     policies = [x for x in env.agents]
     policies_to_train = policies
-    config = algo_config(id_env, policies, policies_to_train, env.unwrapped.max_zombies)
+    config = algo_config(id_env, policies, policies_to_train)
 
     # Train the model
     algo = config.build()
     for i in range(max_iterations):
         result = algo.train()
         result.pop("config")
+        #print(result)
         if "env_runners" in result and "agent_episode_returns_mean" in result["env_runners"]:
             print(i, result["env_runners"]["agent_episode_returns_mean"])
             if result["env_runners"]["agent_episode_returns_mean"]["archer_0"] > 5: # Or any early stopping criterion

@@ -416,7 +416,6 @@ class VisualWrapper(BaseWrapper):
         was_last = bool(selector.is_last()) if selector is not None else True
 
         out = self.env.step(action)
-
         self._refresh_transformed_frame(force=True)
         if self.render_mode == "human" and was_last:
             # After last agent, env has drawn the new frame into env.screen
