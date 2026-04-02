@@ -2,6 +2,7 @@
 """
 from typing import Callable
 import gymnasium
+import time
 from pettingzoo.utils import BaseWrapper
 from pettingzoo.utils.env import AgentID, ObsType
 from PIL import Image
@@ -13,6 +14,10 @@ import numpy as np
 import cv2
 from NeuralNet.AngleNet import AngleNet
 from gymnasium import spaces
+import os
+import sys
+sys.path.append("C:\\Users\\tinsa\\KULeuven\\ml-project-2025-2026-main\\ml-project-2025-2026-main\\pytorch-YOLOv4")
+from tool.darknet2pytorch import Darknet
 
 class CustomWrapper(BaseWrapper):
     """
@@ -20,9 +25,16 @@ class CustomWrapper(BaseWrapper):
     """
     def __init__(self, env):
         super().__init__(env)
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        package_directory = os.path.dirname(os.path.abspath(__file__))
+        #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        cv2.setNumThreads(0)
+        self.device = torch.device("cpu")
+        angle_model_path = os.path.join(package_directory, "NeuralNet", "anglenet.pth")
+
+        # load the model
         self.model = AngleNet().to(self.device)
-        self.model.load_state_dict(torch.load("./NeuralNet/anglenet.pth", map_location=self.device))
+        self.model.load_state_dict(torch.load(angle_model_path, map_location=self.device))
+        
         self.model.eval()
         self.zombie_detector = CustomZombieDetectorFunction(self.env)
 
@@ -87,7 +99,11 @@ class CustomWrapper(BaseWrapper):
         with torch.no_grad():
             output_infer = self.model(crop_tensor)
             output_infer = output_infer.squeeze(0)
+        
+        #start = time.perf_counter()
         zombies = self.zombie_detector(obs)
+        #end = time.perf_counter()
+        #print(f"Zombie detection took {end-start:.6f} seconds")
         #zombies = []
         num_zombies = len(zombies)
         final_obs = [x*2/1280-1,y*2/720-1,
@@ -138,9 +154,22 @@ class CustomZombieDetectorFunction(Callable):
     """Function to use to load the trained model and predict where
     the zombies are.
     """
-
+        
     def __init__(self, env: gymnasium.Env):
-        self.net = None
+        cv2.setNumThreads(0)
+        package_directory = os.path.dirname(os.path.abspath(__file__))
+
+        # construct absolute paths to YOLO weights and cfg
+        weights_path = os.path.join(package_directory, "yolov4-tiny-weights", "my_yolov4-tiny.pth")
+        cfg_path = os.path.join(package_directory, "yolov4-tiny-obj.cfg")
+
+        self.model = Darknet(cfg_path)
+        #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cpu")
+        self.model.load_state_dict(torch.load(weights_path, map_location=self.device))
+        self.model.to(self.device)
+        self.model.eval()
+        
         
 
     def __call__(self, observation, *args, **kwargs):
@@ -150,49 +179,37 @@ class CustomZombieDetectorFunction(Callable):
         likely to least likely positions. The evaluation uses the first k
         items if there are k zombies on the screen.
         """
-        if self.net is None:
-            self.net = cv2.dnn.readNet(
-                "yolov4-tiny-weights/yolov4-tiny-obj_best(1).weights",
-                "yolov4-tiny-obj.cfg"
-            )
-            layer_names = self.net.getLayerNames()
-            self.output_layers = [layer_names[i - 1] for i in self.net.getUnconnectedOutLayers()]
+        
         matrix = []
-        
-        blob = cv2.dnn.blobFromImage(observation, 1/255, (416, 416), (0,0,0), swapRB=True, crop=False)
-        self.net.setInput(blob)
-        outputs = self.net.forward(self.output_layers)
-        conf_threshold = 0.5
-        nms_threshold = 0.4
-        boxes = []
-        confidences = []
+        img = cv2.resize(observation, (416, 416))
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img = torch.from_numpy(img).float() / 255.0  
+        img = img.permute(2, 0, 1).unsqueeze(0).to(self.device) 
 
-        for out in outputs:
-            for detection in out:
-                scores = detection[5:]
-                class_id = np.argmax(scores)
-                confidence = scores[class_id]
-                    
-                if confidence > conf_threshold:
-                    center_x = int(detection[0] * 1280)+15
-                    center_y = int(detection[1] * 720)+15
-                    w = int(detection[2] * 1280)
-                    h = int(detection[3] * 720)
-                        
-                    x = int(center_x - w / 2)
-                    y = int(center_y - h / 2)
-                        
-                    boxes.append([x, y, w, h])
-                    confidences.append(float(confidence))
+        with torch.no_grad():
+            outputs = self.model(img)
 
-        indices = cv2.dnn.NMSBoxes(boxes, confidences, conf_threshold, nms_threshold)
-        
-        for i in indices:
-            idx = i[0] if isinstance(i, (list, np.ndarray)) else i
-            
-            x, y, w, h = boxes[idx]
-            conf = confidences[idx]
-            
-            matrix.append([x,y,w,h])
+        #print(outputs)
+        boxes, confidences = outputs
+        boxes = boxes.squeeze(0).squeeze(1)  
+        confidences = confidences.squeeze(0).squeeze(1)
+
+        conf_thresh = 0.9
+        mask = confidences > conf_thresh
+        boxes_high_conf = boxes[mask]
+        #print(boxes_high_conf)
+
+        for box in boxes_high_conf:
+            box = box.tolist()
+            x_norm, y_norm, w_norm, h_norm = box
+
+                # Convert normalized [0,1] to pixels
+            x = int(x_norm * 1280)
+            y = int(y_norm * 720)
+            w = int(w_norm * 1280)
+            h = int(h_norm * 720)
+            zombie = [x+30,y+30,30,30]
+            matrix.append(zombie)
+
         return matrix
 

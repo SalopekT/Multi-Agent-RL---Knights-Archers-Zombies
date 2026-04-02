@@ -33,7 +33,8 @@ def algo_config(id_env, policies, policies_to_train):
             enable_env_runner_and_connector_v2=True,
         )
         .environment(env=id_env, disable_env_checking=True)
-        .env_runners(num_env_runners=1)
+        .env_runners(num_env_runners=1,
+                     sample_timeout_s=300)
         .multi_agent(
             policies={x for x in policies},
             policy_mapping_fn=lambda agent_id, *args, **kwargs: agent_id,

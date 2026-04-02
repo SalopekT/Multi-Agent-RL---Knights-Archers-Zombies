@@ -17,7 +17,7 @@ import sys
 import time
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
-
+import torch
 import numpy as np
 import pygame
 from PIL import Image
@@ -28,7 +28,8 @@ import template_matching as tm
 from rfdetr import RFDETRNano
 from utils import create_environment, iou
 import sys
-
+sys.path.append("C:\\Users\\tinsa\\KULeuven\\ml-project-2025-2026-main\\ml-project-2025-2026-main\\pytorch-YOLOv4")
+from tool.darknet2pytorch import Darknet
 
 logger = logging.getLogger("ml-project")
 
@@ -92,10 +93,18 @@ def evaluate(
     start_time = time.time()
 
     data_generator = dg.DataGenerator()
-    net = cv2.dnn.readNet("yolov4-tiny-weights/yolov4-tiny-obj_best(1).weights", "yolov4-tiny-obj.cfg")
+    '''net = cv2.dnn.readNet("yolov4-tiny-weights/yolov4-tiny-obj_best(1).weights", "yolov4-tiny-obj.cfg")
     layer_names = net.getLayerNames()
     output_layers = [layer_names[i - 1] for i in net.getUnconnectedOutLayers()]
     classes = ["zombie"]
+
+    cfg_path = "yolov4-tiny-obj.cfg"
+    pth_path = "yolov4-tiny-weights/my_yolov4-tiny.pth"
+    model = Darknet(cfg_path)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.load_state_dict(torch.load(pth_path, map_location=device))
+    model.to(device)
+    model.eval()'''
 
     for i, seed in enumerate(seeds):
         env.reset(seed=seed)
@@ -105,10 +114,10 @@ def evaluate(
         for agent in env.agent_iter():
             obs, reward, termination, truncation, info = env.last()
             #print(obs.shape)
-            
+            obs_copy = obs.copy() 
             #data_generator.generate_angle_data(env,obs,step_count)
+            print(obs)
             
-
             step_count += 1
 
             # Accumulate rewards for all agents
