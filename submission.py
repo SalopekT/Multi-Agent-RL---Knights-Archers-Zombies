@@ -58,7 +58,10 @@ class CustomWrapper(BaseWrapper):
                 own_pos = archers[1].rect.center
                 teammate_pos = archers[0].rect.center
                
+        
         x, y = own_pos
+        teammate_pos_rel_x = teammate_pos[0]-x
+        teammate_pos_rel_y = teammate_pos[1]-y
 
         x_min = x - 20
         x_max = x + 21
@@ -111,12 +114,16 @@ class CustomWrapper(BaseWrapper):
                          teammate_pos[0]*2/1280-1,teammate_pos[1]*2/720-1]
         if num_zombies<5:
             for i in range(num_zombies):
-               final_obs.extend([zombies[i][0]*2/1280-1,zombies[i][1]*2/720-1,1.0])
+               zombie_rel_x = zombies[i][0] - x
+               zombie_rel_y = zombies[i][1] - y
+               final_obs.extend([zombie_rel_x*2/1280-1,zombie_rel_y*2/720-1,1.0])
             for i in range(5-num_zombies):
                 final_obs.extend([0.0,0.0,-1.0])
         if num_zombies >= 5:
             for i in range(5):
-               final_obs.extend([zombies[i][0]*2/1280-1,zombies[i][1]*2/720-1,1.0])
+               zombie_rel_x = zombies[i][0] - x
+               zombie_rel_y = zombies[i][1] - y
+               final_obs.extend([zombie_rel_x*2/1280-1,zombie_rel_y*2/720-1,1.0])
         #print(final_obs)
         return np.array(final_obs, dtype=np.float32)
             
