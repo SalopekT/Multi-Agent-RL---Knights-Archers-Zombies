@@ -63,35 +63,27 @@ class CustomWrapper(BaseWrapper):
         teammate_pos_rel_x = teammate_pos[0]-x
         teammate_pos_rel_y = teammate_pos[1]-y
 
-        x_min = x - 20
-        x_max = x + 21
-        y_min = y - 20
-        y_max = y + 21
-                 
-        x_min = max(0, x_min)
-        x_max = min(1280, x_max)
-        y_min = max(0, y_min)
-        y_max = min(720, y_max)
-
+        x_min = max(0,x-20)
+        y_min = max(0,y-20)
+        x_max = min(1280,x+21)
+        y_max = min(720,y+21)
+                
         crop = obs[y_min:y_max, x_min:x_max, :]
-        h, w, _ = crop.shape
+        h, w, c = crop.shape
 
-        pad_h = max(0, 20 - h)
-        pad_w = max(0, 20 - w)
+        to_pad_bottom,to_pad_top,to_pad_right,to_pad_left=0,0,0,0
+        if h<41:
+            to_pad = 41-h
+            to_pad_bottom = to_pad//2
+            to_pad_top = to_pad-to_pad_bottom
 
-        pad_top = pad_h // 2
-        pad_bottom = pad_h - pad_top
+        if w<41:
+            to_pad = 41-w
+            to_pad_right = to_pad//2
+            to_pad_left = to_pad-to_pad_right
 
-        pad_left = pad_w // 2
-        pad_right = pad_w - pad_left
-        crop = np.pad(
-            crop,
-            ((max(0, 41-h)//2, max(0, 41-h) - max(0, 41-h)//2),
-            (max(0, 41-w)//2, max(0, 41-w) - max(0, 41-w)//2),
-            (0,0)),
-            mode='constant',
-            constant_values=0
-        )
+        if h<41 or w <41:
+            crop = np.pad(crop,((to_pad_bottom, to_pad_top),(to_pad_left, to_pad_right),(0,0)),mode='constant',constant_values=0)
         
         
         self.model.eval()
@@ -107,24 +99,31 @@ class CustomWrapper(BaseWrapper):
         zombies = self.zombie_detector(obs)
         #end = time.perf_counter()
         #print(f"Zombie detection took {end-start:.6f} seconds")
-        #zombies = []
+        
         num_zombies = len(zombies)
-        final_obs = [x*2/1280-1,y*2/720-1,
+        #in final obs i normalize to get values from -1 to 1, before normalizing they are either -h to h (x) or -w to w(y)
+        final_obs = [x/1280,y/720,
                          output_infer[0].item(),output_infer[1].item(),
-                         teammate_pos[0]*2/1280-1,teammate_pos[1]*2/720-1]
+                         teammate_pos_rel_x/1280,teammate_pos_rel_y/720]
         if num_zombies<5:
             for i in range(num_zombies):
                zombie_rel_x = zombies[i][0] - x
                zombie_rel_y = zombies[i][1] - y
-               final_obs.extend([zombie_rel_x*2/1280-1,zombie_rel_y*2/720-1,1.0])
+               final_obs.extend([zombie_rel_x/1280,zombie_rel_y/720,1.0])
             for i in range(5-num_zombies):
                 final_obs.extend([0.0,0.0,-1.0])
         if num_zombies >= 5:
             for i in range(5):
                zombie_rel_x = zombies[i][0] - x
                zombie_rel_y = zombies[i][1] - y
-               final_obs.extend([zombie_rel_x*2/1280-1,zombie_rel_y*2/720-1,1.0])
+               final_obs.extend([zombie_rel_x/1280,zombie_rel_y/720,1.0])
         #print(final_obs)
+        final_obs = np.array(final_obs, dtype=np.float32)
+
+        if np.isnan(final_obs).any():
+            print("NaN detected in observation!")
+            final_obs = np.nan_to_num(final_obs, nan=0.0)
+        final_obs = np.clip(final_obs, -1.0, 1.0)
         return np.array(final_obs, dtype=np.float32)
             
 
@@ -139,7 +138,7 @@ class CustomPredictFunction(Callable):
         self.modules = MultiRLModule.from_checkpoint(best_checkpoint)
 
     def __call__(self, observation, agent, *args, **kwargs):
-        rl_module = self.modules[agent]
+        rl_module = self.modules["shared_policy"]
         fwd_ins = {"obs": torch.Tensor(observation).unsqueeze(0)}
         #fwd_ins = observation
         fwd_outputs = rl_module.forward_inference(fwd_ins)
@@ -215,7 +214,10 @@ class CustomZombieDetectorFunction(Callable):
             y = int(y_norm * 720)
             w = int(w_norm * 1280)
             h = int(h_norm * 720)
-            zombie = [x+30,y+30,30,30]
+            if x+30<1280 and y+30<720:
+                zombie = [x+30,y+30,30,30]
+            else:
+                zombie = [x,y,30,30]
             matrix.append(zombie)
 
         return matrix

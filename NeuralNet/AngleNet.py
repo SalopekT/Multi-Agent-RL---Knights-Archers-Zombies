@@ -7,7 +7,7 @@ from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import TensorDataset, DataLoader
 import numpy as np
-
+#https://github.com/pytorch/examples/blob/main/mnist/main.py
 class AngleNet(nn.Module):
     def __init__(self):
         super(AngleNet, self).__init__()
@@ -38,42 +38,21 @@ class AngleNet(nn.Module):
         return x
 
 
-def train(args, model, device, train_loader, optimizer, epoch):
+def train(model, device, train_loader, optimizer, epoch):
     model.train()
     epoch_loss = 0
-
     for batch_idx, (data, target) in enumerate(train_loader):
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
-
         output = model(data)
-        output = F.normalize(output, dim=1)
         target = F.normalize(target, dim=1)
-
         loss = 1 - F.cosine_similarity(output, target).mean()
         loss.backward()
         optimizer.step()
-
         epoch_loss += loss.item() * data.size(0)
     epoch_loss /= len(train_loader.dataset)
-    model.eval() 
-    all_outputs = []
-    all_targets = []
-    with torch.no_grad():
-        for data, target in train_loader:
-            data, target = data.to(device), target.to(device)
-            output = model(data)
-            output = F.normalize(output, dim=1)
-            target = F.normalize(target, dim=1)
-            all_outputs.append(output)
-            all_targets.append(target)
 
-        all_outputs = torch.cat(all_outputs, dim=0)
-        all_targets = torch.cat(all_targets, dim=0)
-        angle_error = torch.acos(F.cosine_similarity(all_outputs, all_targets).clamp(-1,1))
-        angle_error = angle_error.mean() * 180 / torch.pi
-
-    print(f"Epoch {epoch} avg loss: {epoch_loss:.4f}, avg angle error: {angle_error:.2f}°")
+    print(f"Epoch {epoch} avg loss: {epoch_loss:.4f}")
     model.train()
 
 
@@ -103,15 +82,10 @@ def main():
 
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 
-    class Args:
-        log_interval = 10
-        dry_run = False
-
-    args = Args()
     num_epochs = 10
 
     for epoch in range(1, num_epochs + 1):
-        train(args, model, device, train_loader, optimizer, epoch)
+        train(model, device, train_loader, optimizer, epoch)
 
     torch.save(model.state_dict(), "anglenet2.pth")
     print("Model saved!")

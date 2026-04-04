@@ -33,26 +33,30 @@ def algo_config(id_env, policies, policies_to_train):
             enable_env_runner_and_connector_v2=True,
         )
         .environment(env=id_env, disable_env_checking=True)
-        .env_runners(num_env_runners=1,
-                     sample_timeout_s=300)
+        .env_runners(num_env_runners=4,
+                     sample_timeout_s=500)
+        
         .multi_agent(
-            policies={x for x in policies},
-            policy_mapping_fn=lambda agent_id, *args, **kwargs: agent_id,
+            policies={"shared_policy"},
+            policy_mapping_fn=lambda agent_id, *args, **kwargs: "shared_policy",
             policies_to_train=policies_to_train,
         )
         .rl_module(
             rl_module_spec=MultiRLModuleSpec(
                 rl_module_specs={
-                    x: RLModuleSpec(module_class=PPOTorchRLModule, model_config={"fcnet_hiddens": [64, 64]})
-                    if x in policies_to_train
-                    else
-                    RLModuleSpec(module_class=RandomRLModule)
-                    for x in policies},
-            ))
+                    "shared_policy": RLModuleSpec(
+                        module_class=PPOTorchRLModule,
+                        model_config={"fcnet_hiddens": [128, 128]},
+                    )
+                },
+            )
+        )
         .training(
-            train_batch_size=512,
+            train_batch_size=2048,
             lr=1e-4,
             gamma=0.99,
+            grad_clip=0.5,
+            num_sgd_iter=10
         )
         .debugging(log_level="ERROR")
 
@@ -74,8 +78,10 @@ def training(env, checkpoint_path, max_iterations = 500):
     torch.manual_seed(42)
 
     # Define the configuration for the PPO algorithm
-    policies = [x for x in env.agents]
-    policies_to_train = policies
+    '''policies = [x for x in env.agents]
+    policies_to_train = policies'''
+    policies = ["shared_policy"]
+    policies_to_train = ["shared_policy"]
     config = algo_config(id_env, policies, policies_to_train)
 
     # Train the model
@@ -108,3 +114,19 @@ if __name__ == "__main__":
     # Running training routine
     checkpoint_path = str(Path("results").resolve())
     training(env, checkpoint_path, max_iterations = 100)
+
+
+'''.multi_agent(
+            policies={x for x in policies},
+            policy_mapping_fn=lambda agent_id, *args, **kwargs: agent_id,
+            policies_to_train=policies_to_train,
+        )
+        .rl_module(
+            rl_module_spec=MultiRLModuleSpec(
+                rl_module_specs={
+                    x: RLModuleSpec(module_class=PPOTorchRLModule, model_config={"fcnet_hiddens": [64, 64]})
+                    if x in policies_to_train
+                    else
+                    RLModuleSpec(module_class=RandomRLModule)
+                    for x in policies},
+            ))'''

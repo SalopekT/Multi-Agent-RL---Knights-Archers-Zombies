@@ -83,11 +83,6 @@ class DataGenerator:
         train_or_val = random.randint(1,10)
         if train_or_val > 2:
             for zombie in zombie_coords:
-                '''pixel_x_diff = 1280*zombie[0]
-                pixel_y_diff = 720*zombie[1]
-                if (abs(pixel_x_diff)<256 and abs(pixel_y_diff)<256):
-                    with open(f"dataset\\labels\\train\\img{self._counter}.txt", "a") as f:
-                        f.write(f"0 {zombie[0]} {zombie[1]} {zombie[2]} {zombie[3]}\n")'''
                 with open(f"dataset2\\labels\\train\\img{self._counter}.txt", "a") as f:
                         f.write(f"0 {zombie[0]} {zombie[1]} {zombie[2]} {zombie[3]}\n")
             '''if teammate is not None:
@@ -102,9 +97,6 @@ class DataGenerator:
             for zombie in zombie_coords:
                 pixel_x_diff = 1280*zombie[0]
                 pixel_y_diff = 720*zombie[1]
-                '''if (abs(pixel_x_diff)<256 and abs(pixel_y_diff)<256):
-                    with open(f"dataset\\labels\\val\\img{self._counter}.txt", "a") as f:
-                        f.write(f"0 {zombie[0]} {zombie[1]} {zombie[2]} {zombie[3]}\n")'''
                 with open(f"dataset2\\labels\\val\\img{self._counter}.txt", "a") as f:
                         f.write(f"0 {zombie[0]} {zombie[1]} {zombie[2]} {zombie[3]}\n")
             '''if teammate is not None:
@@ -129,38 +121,6 @@ class DataGenerator:
             img.save(f"dataset2\\images\\train\\img{self._counter}.jpeg")
         else:
             img.save(f"dataset2\\images\\val\\img{self._counter}.jpeg")
-        '''print(data.shape)
-        own_pixel_x = int(own[0] * 1280)
-        own_pixel_y = int(own[1] * 720)
-
-        left   = own_pixel_x - 256
-        right  = own_pixel_x + 256
-        top    = own_pixel_y - 256
-        bottom = own_pixel_y + 256
-
-        crop_left  = max(0, left)
-        crop_top   = max(0, top)
-        crop_right = min(1280, right)
-        crop_bottom= min(720, bottom)
-
-        paste_x = max(0, -left)
-        paste_y = max(0, -top)
-
-        black_img = np.zeros((512, 512, 3), dtype=np.uint8)
-
-        valid = data[crop_top:crop_bottom, crop_left:crop_right]
-
-        h, w = valid.shape[:2]
-
-        # paste it
-        black_img[paste_y:paste_y+h, paste_x:paste_x+w] = valid
-
-        if train_or_val > 2:
-            img = Image.fromarray(black_img, mode='RGB')
-            img.save(f"dataset\\images\\train\\img{self._counter}.jpeg")
-        else:
-            img = Image.fromarray(black_img, mode='RGB')
-            img.save(f"dataset\\images\\val\\img{self._counter}.jpeg")'''
 
         self._counter+=6
 
@@ -174,49 +134,6 @@ class DataGenerator:
         if (step==0):
             img.save('rgb.png')
     
-    '''def generate_one_data_point(self,env : Any, agent, obs, step):
-        zombie_coords = extract_zombie_coords(obs)
-        print(zombie_coords)
-        #print(curr_state.shape)
-
-    
-        train_or_val = random.randint(1,10)
-        if train_or_val > 2:
-            for zombie in zombie_coords:
-                with open(f"dataset\\labels\\train\\img{self._counter}.txt", "a") as f:
-                    f.write(f"0 {zombie[0]} {zombie[1]} {zombie[2]} {zombie[3]}\n")
-        else:
-            for zombie in zombie_coords:
-                with open(f"dataset\\labels\\val\\img{self._counter}.txt", "a") as f:
-                    f.write(f"0 {zombie[0]} {zombie[1]} {zombie[2]} {zombie[3]}\n")
-
-        #data is the pixels on the screen
-        #https://stackoverflow.com/questions/19982760/get-numpy-array-from-pygame
-        data = pygame.surfarray.array3d(env.unwrapped.screen)
-        data = np.swapaxes(data,0,1)
-        print(data.shape)
-        if train_or_val > 2:
-            img = Image.fromarray(data, mode='RGB')
-            img.save(f"dataset\\images\\train\\img{self._counter}.jpeg")
-        else:
-            img = Image.fromarray(data, mode='RGB')
-            img.save(f"dataset\\images\\val\\img{self._counter}.jpeg")
-
-        self._counter+=1
-
-        raveled_data = data.ravel()
-        print(data.shape)
-        print(raveled_data.shape)
-        flat_obs = raveled_data.astype(np.float32) / 255.0
-
-        
-
-    if (step==0):
-        img = Image.fromarray(data, mode='RGB')
-        img.save('rgb.png')
-        if (step==0):
-            img = Image.fromarray(data, mode='RGB')
-            img.save('rgb.png')'''
     
     def generate_angle_data(self,env : Any, obs, step):
          print(self._counter)
@@ -240,33 +157,27 @@ class DataGenerator:
                  
                  heading = [x_heading,y_heading]
                  self.labels.append(heading)
-                 x_min = x_own - 20
-                 x_max = x_own + 21
-                 y_min = y_own - 20
-                 y_max = y_own + 21
+                 x_min = max(0,x_own-20)
+                 y_min = max(0,y_own-20)
+                 x_max = min(1280,x_own+21)
+                 y_max = min(720,y_own+21)
 
-                 x_min = max(0, x_min)
-                 x_max = min(1280, x_max)
-                 y_min = max(0, y_min)
-                 y_max = min(720, y_max)
+                 crop = obs[y_min:y_max, x_min:x_max, :]
+                 h, w, c = crop.shape
 
-                 crop = data_full_screen[y_min:y_max, x_min:x_max, :]
-                 h, w, _ = crop.shape
+                 to_pad_bottom,to_pad_top,to_pad_right,to_pad_left=0,0,0,0
+                 if h<41:
+                    to_pad = 41-h
+                    to_pad_bottom = to_pad//2
+                    to_pad_top = to_pad-to_pad_bottom
 
-                 pad_h = max(0, 20 - h)
-                 pad_w = max(0, 20 - w)
+                 if w<41:
+                    to_pad = 41-w
+                    to_pad_right = to_pad//2
+                    to_pad_left = to_pad-to_pad_right
 
-                 pad_top = pad_h // 2
-                 pad_bottom = pad_h - pad_top
-
-                 pad_left = pad_w // 2
-                 pad_right = pad_w - pad_left
-                 crop = np.pad(
-                    crop,
-                    ((pad_top, pad_bottom), (pad_left, pad_right), (0, 0)),
-                    mode='constant',
-                    constant_values=0
-                )
+                 if h<41 or w <41:
+                    crop = np.pad(crop,((to_pad_bottom, to_pad_top),(to_pad_left, to_pad_right),(0,0)),mode='constant',constant_values=0)
                  self.images.append(crop)
                  img = Image.fromarray(crop.astype(np.uint8))
                  img.save("test_crop.png")
