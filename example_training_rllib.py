@@ -56,7 +56,8 @@ def algo_config(id_env, policies, policies_to_train):
             lr=1e-4,
             gamma=0.99,
             grad_clip=0.5,
-            num_sgd_iter=10
+            num_sgd_iter=10,
+             entropy_coeff=0.02
         )
         .debugging(log_level="ERROR")
 
@@ -92,7 +93,7 @@ def training(env, checkpoint_path, max_iterations = 500):
         #print(result)
         if "env_runners" in result and "agent_episode_returns_mean" in result["env_runners"]:
             print(i, result["env_runners"]["agent_episode_returns_mean"])
-            if result["env_runners"]["agent_episode_returns_mean"]["archer_0"] > 5: # Or any early stopping criterion
+            if result["env_runners"]["agent_episode_returns_mean"]["archer_0"] > 15: # Or any early stopping criterion
                 break
         if i % 5 == 0:
             save_result = algo.save(checkpoint_path)
