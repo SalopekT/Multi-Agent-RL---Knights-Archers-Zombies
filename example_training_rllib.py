@@ -93,7 +93,7 @@ def training(env, checkpoint_path, max_iterations = 500):
         #print(result)
         if "env_runners" in result and "agent_episode_returns_mean" in result["env_runners"]:
             print(i, result["env_runners"]["agent_episode_returns_mean"])
-            if result["env_runners"]["agent_episode_returns_mean"]["archer_0"] > 15: # Or any early stopping criterion
+            if result["env_runners"]["agent_episode_returns_mean"]["archer_0"] > 50: # Or any early stopping criterion
                 break
         if i % 5 == 0:
             save_result = algo.save(checkpoint_path)
