@@ -112,11 +112,14 @@ def evaluate(
         step_count = 0
         
         for agent in env.agent_iter():
+            #print("Current agent: "+env.agent_selection)
             obs, reward, termination, truncation, info = env.last()
+            print(obs)
+            
             #print(obs.shape)
             obs_copy = obs.copy() 
             #data_generator.generate_angle_data(env,obs,step_count)
-            print(obs)
+            #print(obs)
             
             step_count += 1
 
@@ -137,8 +140,9 @@ def evaluate(
 
             if do_terminate:
                 break
-
             env.step(action)
+            #print("After step")
+            #print(env.agent_selection)
 
         if do_terminate or (i + 1) % 10 == 0:
             logger.info(f"Completed {i + 1}/{len(seeds)} episodes")

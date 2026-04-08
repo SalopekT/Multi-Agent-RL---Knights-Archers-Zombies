@@ -19,6 +19,19 @@ import sys
 sys.path.append("C:\\Users\\tinsa\\KULeuven\\ml-project-2025-2026-main\\ml-project-2025-2026-main\\pytorch-YOLOv4")
 from tool.darknet2pytorch import Darknet
 
+class Leniency:
+    def __init__(self, N):
+        self.leniency = N
+        self.last_N_rewards = {0:[],1:[],2:[],3:[],4:[],5:[]}
+
+    def add_reward(self,reward,move):
+        if len(self._last_N_rewards[move]) < self.leniency:
+            self._last_N_rewards[move].append(reward)
+
+    def clear_rewards(self,move):
+         self._last_N_rewards[move].clear()
+        
+
 class CustomWrapper(BaseWrapper):
     """
     Wrapper to use to add state pre-processing (feature engineering)
@@ -34,9 +47,14 @@ class CustomWrapper(BaseWrapper):
         # load the model
         self.model = AngleNet().to(self.device)
         self.model.load_state_dict(torch.load(angle_model_path, map_location=self.device))
-        
         self.model.eval()
+
         self.zombie_detector = CustomZombieDetectorFunction(self.env)
+
+        self.leniency_archer_0 = Leniency(10)
+        self.leniency_archer_1 = Leniency(10)
+
+
 
     def observation_space(self, agent: AgentID) -> gymnasium.spaces.Space:
         return spaces.Box(low = -1.0, high = 1.0, shape = (3*2+5*3,))
@@ -120,11 +138,19 @@ class CustomWrapper(BaseWrapper):
         #print(final_obs)
         final_obs = np.array(final_obs, dtype=np.float32)
 
-        if np.isnan(final_obs).any():
-            print("NaN detected in observation!")
-            final_obs = np.nan_to_num(final_obs, nan=0.0)
         final_obs = np.clip(final_obs, -1.0, 1.0)
         return np.array(final_obs, dtype=np.float32)
+    
+    def step(self, action):
+        curr_agent = self.env.agent_selection
+        self.env.step(action)
+        obs, reward, termination, truncation, info = self.last()
+
+        if (curr_agent == "archer_0"):
+            self.leniency_archer_0.add_reward(reward)
+        
+
+
             
 
 
@@ -138,7 +164,7 @@ class CustomPredictFunction(Callable):
         self.modules = MultiRLModule.from_checkpoint(best_checkpoint)
 
     def __call__(self, observation, agent, *args, **kwargs):
-        rl_module = self.modules["shared_policy"]
+        rl_module = self.modules[agent]
         fwd_ins = {"obs": torch.Tensor(observation).unsqueeze(0)}
         #fwd_ins = observation
         fwd_outputs = rl_module.forward_inference(fwd_ins)
