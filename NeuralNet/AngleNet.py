@@ -24,8 +24,10 @@ class AngleNet(nn.Module):
     def forward(self, x):
         # x = x.permute(0, 3, 1, 2)  # if needed
 
-        x = F.relu(self.conv1(x))
-        x = F.relu(self.conv2(x))
+        x = self.conv1(x)
+        x = F.relu(x)
+        x = self.conv2(x)
+        x = F.relu(x)
         x = F.max_pool2d(x, 2)
         x = self.dropout1(x)
         x = torch.flatten(x, 1)
@@ -45,14 +47,15 @@ def train(model, device, train_loader, optimizer, epoch):
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
         output = model(data)
-        target = F.normalize(target, dim=1)
-        loss = 1 - F.cosine_similarity(output, target).mean()
+
+        #https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.cosine_similarity.html
+        loss = 1-F.cosine_similarity(output, target).mean()
         loss.backward()
         optimizer.step()
-        epoch_loss += loss.item() * data.size(0)
-    epoch_loss /= len(train_loader.dataset)
+        epoch_loss += loss.item()*data.size(0)
+    epoch_loss = epoch_loss/len(train_loader.dataset)
 
-    print(f"Epoch {epoch} avg loss: {epoch_loss:.4f}")
+    print(f"Average loss in epoch: {epoch_loss:.4f}")
     model.train()
 
 
@@ -63,15 +66,13 @@ def main():
     targets_list = []
     for i in range(6):
         data = np.load(f"../dataset_angles/dataset{i}.npz")
-
-        images = data['images']   # (N, 41, 41, 3)
-        labels = data['labels']   # (N,2)
-
+        images = data['images']  
+        labels = data['labels']
         images_list.append(images)
         targets_list.append(labels)
     images = np.concatenate(images_list, axis=0)
-    images = images / 255.0
-    images = (images - 0.5) / 0.5
+    images = images/255.0
+    images = (images-0.5)/0.5
     labels = np.concatenate(targets_list, axis=0)
     images = torch.tensor(images, dtype=torch.float32).permute(0, 3, 1, 2)
     labels = torch.tensor(labels, dtype=torch.float32)
@@ -84,7 +85,7 @@ def main():
 
     num_epochs = 10
 
-    for epoch in range(1, num_epochs + 1):
+    for epoch in range(1, num_epochs+1):
         train(model, device, train_loader, optimizer, epoch)
 
     torch.save(model.state_dict(), "anglenet2.pth")

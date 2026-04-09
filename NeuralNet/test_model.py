@@ -55,9 +55,9 @@ def main():
     error0 = evaluate(model, test_loader0, device)
     print(f"Dataset 0 average angle error: {error0:.2f}°")
 
-    num_examples = 4
-    example_images = images0[0:0+num_examples]
-    example_labels = labels0[0:0+num_examples]
+    num_examples = 30
+    example_images = images0[200:200+30*num_examples:30]
+    example_labels = labels0[200:200+30*num_examples:30]
     model.eval()
     with torch.no_grad():
         example_images = example_images.to(device)

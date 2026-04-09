@@ -112,10 +112,12 @@ def evaluate(
         step_count = 0
         
         for agent in env.agent_iter():
-            #print("Current agent: "+env.agent_selection)
+            print("Current agent: "+env.agent_selection)
             obs, reward, termination, truncation, info = env.last()
-            print(obs)
-            
+            #print(obs)
+            #print(env.rewards["archer_0"])
+            #print(env.rewards["archer_1"])
+            #print("---")
             #print(obs.shape)
             obs_copy = obs.copy() 
             #data_generator.generate_angle_data(env,obs,step_count)

@@ -54,6 +54,8 @@ class CustomWrapper(BaseWrapper):
         self.leniency_archer_0 = Leniency(10)
         self.leniency_archer_1 = Leniency(10)
 
+        self.last_2_rewards = [-1,-1]
+
 
 
     def observation_space(self, agent: AgentID) -> gymnasium.spaces.Space:
@@ -110,8 +112,8 @@ class CustomWrapper(BaseWrapper):
         crop_tensor = crop_tensor.unsqueeze(0) 
         
         with torch.no_grad():
-            output_infer = self.model(crop_tensor)
-            output_infer = output_infer.squeeze(0)
+            output_heading = self.model(crop_tensor)
+            output_heading = output_heading.squeeze(0)
         
         #start = time.perf_counter()
         zombies = self.zombie_detector(obs)
@@ -121,7 +123,7 @@ class CustomWrapper(BaseWrapper):
         num_zombies = len(zombies)
         #in final obs i normalize to get values from -1 to 1, before normalizing they are either -h to h (x) or -w to w(y)
         final_obs = [x/1280,y/720,
-                         output_infer[0].item(),output_infer[1].item(),
+                         output_heading[0].item(),output_heading[1].item(),
                          teammate_pos_rel_x/1280,teammate_pos_rel_y/720]
         if num_zombies<5:
             for i in range(num_zombies):
@@ -141,14 +143,18 @@ class CustomWrapper(BaseWrapper):
         final_obs = np.clip(final_obs, -1.0, 1.0)
         return np.array(final_obs, dtype=np.float32)
     
-    def step(self, action):
+    '''def step(self, action):
         curr_agent = self.env.agent_selection
         self.env.step(action)
         obs, reward, termination, truncation, info = self.last()
 
-        if (curr_agent == "archer_0"):
-            self.leniency_archer_0.add_reward(reward)
-        
+        r1 = self.env.rewards["archer_0"]
+        r2 = self.env.rewards["archer_1"]
+
+        sum_reward = r1+r2
+        self.env.rewards["archer_0"] = sum_reward
+        self.env.rewards["archer_1"] = sum_reward'''
+                
 
 
             
@@ -223,23 +229,24 @@ class CustomZombieDetectorFunction(Callable):
 
         #print(outputs)
         boxes, confidences = outputs
-        boxes = boxes.squeeze(0).squeeze(1)  
-        confidences = confidences.squeeze(0).squeeze(1)
+        boxes = boxes[0, 0]
+        confidences = confidences[0, 0]
+        boxes_new = []
 
-        conf_thresh = 0.9
-        mask = confidences > conf_thresh
-        boxes_high_conf = boxes[mask]
-        #print(boxes_high_conf)
+        for i in range(len(confidences)):
+            if confidences[i]>0.9:
+                boxes_new.append(boxes[i])
+        
+        #print(boxes_new)
 
-        for box in boxes_high_conf:
+        for box in boxes_new:
             box = box.tolist()
-            x_norm, y_norm, w_norm, h_norm = box
+            x, y, w, h = box
 
-                # Convert normalized [0,1] to pixels
-            x = int(x_norm * 1280)
-            y = int(y_norm * 720)
-            w = int(w_norm * 1280)
-            h = int(h_norm * 720)
+            x = int(x*1280)
+            y = int(y*720)
+            w = int(w*1280)
+            h = int(h*720)
             if x+30<1280 and y+30<720:
                 zombie = [x+30,y+30,30,30]
             else:
