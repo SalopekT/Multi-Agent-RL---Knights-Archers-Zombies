@@ -16,6 +16,7 @@ from NeuralNet.AngleNet import AngleNet
 from gymnasium import spaces
 import os
 import sys
+import math
 sys.path.append("C:\\Users\\tinsa\\KULeuven\\ml-project-2025-2026-main\\ml-project-2025-2026-main\\pytorch-YOLOv4")
 from tool.darknet2pytorch import Darknet
 
@@ -117,45 +118,47 @@ class CustomWrapper(BaseWrapper):
         
         #start = time.perf_counter()
         zombies = self.zombie_detector(obs)
+        num_zombies = len(zombies)
+        zombie_y_values = []
+        for i in range(num_zombies):
+            zombie_rel_x = zombies[i][0] - x
+            zombie_rel_y = zombies[i][1] - y
+            zombie_y_values.append(zombies[i][0])
+
+        sorted_zombies = [val for _, val in sorted(zip(zombie_y_values, zombies))]
+        sorted_zombies.reverse()
         #end = time.perf_counter()
         #print(f"Zombie detection took {end-start:.6f} seconds")
         
-        num_zombies = len(zombies)
         #in final obs i normalize to get values from -1 to 1, before normalizing they are either -h to h (x) or -w to w(y)
         final_obs = [x/1280,y/720,
                          output_heading[0].item(),output_heading[1].item(),
                          teammate_pos_rel_x/1280,teammate_pos_rel_y/720]
         if num_zombies<5:
             for i in range(num_zombies):
-               zombie_rel_x = zombies[i][0] - x
-               zombie_rel_y = zombies[i][1] - y
+               zombie_rel_x = sorted_zombies[i][0] - x
+               zombie_rel_y = sorted_zombies[i][1] - y
                final_obs.extend([zombie_rel_x/1280,zombie_rel_y/720,1.0])
             for i in range(5-num_zombies):
                 final_obs.extend([0.0,0.0,-1.0])
         if num_zombies >= 5:
             for i in range(5):
-               zombie_rel_x = zombies[i][0] - x
-               zombie_rel_y = zombies[i][1] - y
+               zombie_rel_x = sorted_zombies[i][0] - x
+               zombie_rel_y = sorted_zombies[i][1] - y
                final_obs.extend([zombie_rel_x/1280,zombie_rel_y/720,1.0])
         #print(final_obs)
         final_obs = np.array(final_obs, dtype=np.float32)
 
         final_obs = np.clip(final_obs, -1.0, 1.0)
         return np.array(final_obs, dtype=np.float32)
-    
+   
+                
     '''def step(self, action):
         curr_agent = self.env.agent_selection
-        self.env.step(action)
-        obs, reward, termination, truncation, info = self.last()
+        obs, reward, terminated, truncated, info = self.env.step(action)
+        reward = 0.05 
 
-        r1 = self.env.rewards["archer_0"]
-        r2 = self.env.rewards["archer_1"]
-
-        sum_reward = r1+r2
-        self.env.rewards["archer_0"] = sum_reward
-        self.env.rewards["archer_1"] = sum_reward'''
-                
-
+        return obs, reward, terminated, truncated, info'''
 
             
 
@@ -168,6 +171,7 @@ class CustomPredictFunction(Callable):
         # Here you should load your trained model(s) from a checkpoint in your folder
         best_checkpoint = (Path("results") / "learner_group" / "learner" / "rl_module").resolve()
         self.modules = MultiRLModule.from_checkpoint(best_checkpoint)
+        #self.policy = self.modules["shared_policy"]
 
     def __call__(self, observation, agent, *args, **kwargs):
         rl_module = self.modules[agent]
@@ -180,6 +184,15 @@ class CustomPredictFunction(Callable):
         )
         action = action_dist.sample()[0].numpy()
         return action
+        '''fwd_outputs = self.policy.forward_inference(fwd_ins)
+
+        action_dist_class = self.policy.get_inference_action_dist_cls()
+        action_dist = action_dist_class.from_logits(
+            fwd_outputs["action_dist_inputs"]
+        )
+
+        action = action_dist.sample()[0].numpy()
+        return action'''
     
     '''def __init__(self, env):
         self.env = env
