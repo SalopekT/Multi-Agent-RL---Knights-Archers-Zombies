@@ -30,7 +30,7 @@ class CustomWrapper(BaseWrapper):
     def observe(self, agent: AgentID) -> ObsType | None:
         obs = super().observe(agent)
         state = super().state()
-        print(state)
+        #print(state)
         own_pos = [0,0]
         teammate_pos = [0,0]
         archers = list(self.env.unwrapped.archer_list)
@@ -58,6 +58,8 @@ class CustomWrapper(BaseWrapper):
                  y_heading = object[10]
                  data_own = [x_own,y_own,x_heading,y_heading]
                  output_heading = [x_heading,y_heading]
+        if len(output_heading)!=2:
+            output_heading = [-1,0]
         zombies = []
         for object in state:
             if object[0]==1:
@@ -92,8 +94,9 @@ class CustomWrapper(BaseWrapper):
                zombie_rel_x = sorted_zombies[i][0] - x
                zombie_rel_y = sorted_zombies[i][1] - y
                final_obs.extend([zombie_rel_x/1280,zombie_rel_y/720,1.0])
-        print(final_obs)
-        return np.array(final_obs, dtype=np.float32)
+        final_obs = np.array(final_obs, dtype=np.float32)
+        #print(final_obs)
+        return final_obs
 
 
 class CustomPredictFunction(Callable):

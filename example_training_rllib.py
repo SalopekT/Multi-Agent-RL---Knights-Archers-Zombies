@@ -19,7 +19,7 @@ import numpy as np
 import torch
 
 from utils import create_environment
-from submission import CustomWrapper
+from submission_example_rllib import CustomWrapper
 
 
 
@@ -33,7 +33,7 @@ def algo_config(id_env, policies, policies_to_train):
             enable_env_runner_and_connector_v2=True,
         )
         .environment(env=id_env, disable_env_checking=True)
-        .env_runners(num_env_runners=4,
+        .env_runners(num_env_runners=1,
                      sample_timeout_s=500)
         
         .multi_agent(
