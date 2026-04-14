@@ -137,10 +137,10 @@ class DataGenerator:
     
     def generate_angle_data(self,env : Any, obs, step):
          print(self._counter)
-         if self._counter==5000:
+         if self._counter==1000:
              images = np.array(self.images)
              labels = np.array(self.labels)
-             np.savez("dataset_angles/dataset_test2.npz", images=images, labels=labels)
+             np.savez("dataset_angles/dataset_test3.npz", images=images, labels=labels)
          data_own = []
          for object in obs:
              if np.isscalar(object[5]) and object[5]==1:
@@ -162,7 +162,7 @@ class DataGenerator:
                  x_max = min(1280,x_own+21)
                  y_max = min(720,y_own+21)
 
-                 crop = obs[y_min:y_max, x_min:x_max, :]
+                 crop = data_full_screen[y_min:y_max, x_min:x_max, :]
                  h, w, c = crop.shape
 
                  to_pad_bottom,to_pad_top,to_pad_right,to_pad_left=0,0,0,0

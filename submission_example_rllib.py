@@ -25,29 +25,75 @@ class CustomWrapper(BaseWrapper):
         self.target_size = target_size  # (H, W)
 
     def observation_space(self, agent: AgentID):
-        h, w = self.target_size
-        c = super().observation_space(agent).shape[2]
-
-        flat_size = h * w * c
-
-        return spaces.Box(
-            low=0.0,
-            high=1.0,
-            shape=(flat_size,),
-            dtype=np.float32,
-        )
+        return spaces.Box(low = -1.0, high = 1.0, shape = (3*2+5*3,))
 
     def observe(self, agent: AgentID) -> ObsType | None:
-        obs = super().observe(agent)  # (H, W, C) uint8
+        obs = super().observe(agent)
+        state = super().state()
+        print(state)
+        own_pos = [0,0]
+        teammate_pos = [0,0]
+        archers = list(self.env.unwrapped.archer_list)
+        if len(archers)==2:
+            if (agent == "archer_0"):
+                own_pos = archers[0].rect.center
+                teammate_pos = archers[1].rect.center
+            else:
+                own_pos = archers[1].rect.center
+                teammate_pos = archers[0].rect.center
+               
+        
+        x, y = own_pos
+        teammate_pos_rel_x = teammate_pos[0]-x
+        teammate_pos_rel_y = teammate_pos[1]-y
 
-        # Resize
-        img = Image.fromarray(obs)
-        img = img.resize(self.target_size[::-1], Image.BILINEAR)
-        obs_small = np.array(img)
+        output_heading = []
+        for object in obs:
+             if np.isscalar(object[5]) and object[5]==1:
+                 x_own = object[7]
+                 y_own = object[8]
+                 x_own = int(x_own * 1280)+15
+                 y_own = int(y_own * 720)+15
+                 x_heading = object[9]
+                 y_heading = object[10]
+                 data_own = [x_own,y_own,x_heading,y_heading]
+                 output_heading = [x_heading,y_heading]
+        zombies = []
+        for object in state:
+            if object[0]==1:
+                w_bbox = 29.0/1280
+                h_bbox = 31.0/720
+                x = int(object[6]*1280)
+                y = int(object[7]*720)
+                zombie_pos = [x,y]
+                zombies.append(zombie_pos)
+        num_zombies = len(zombies)
+        zombie_y_values = []
+        for i in range(num_zombies):
+            zombie_rel_x = zombies[i][0] - x
+            zombie_rel_y = zombies[i][1] - y
+            zombie_y_values.append(zombies[i][0])
+        sorted_zombies = sorted(zombies, key=lambda z: z[1])
+        #print("----------")
+        sorted_zombies.reverse()
 
-        # Normalize + flatten
-        flat_obs = obs_small.astype(np.float32) / 255.0
-        return flat_obs.flatten()
+        final_obs = [x/1280,y/720,
+                         output_heading[0],output_heading[1],
+                         teammate_pos_rel_x/1280,teammate_pos_rel_y/720]
+        if num_zombies<5:
+            for i in range(num_zombies):
+               zombie_rel_x = sorted_zombies[i][0] - x
+               zombie_rel_y = sorted_zombies[i][1] - y
+               final_obs.extend([zombie_rel_x/1280,zombie_rel_y/720,1.0])
+            for i in range(5-num_zombies):
+                final_obs.extend([0.0,0.0,0.0])
+        if num_zombies >= 5:
+            for i in range(5):
+               zombie_rel_x = sorted_zombies[i][0] - x
+               zombie_rel_y = sorted_zombies[i][1] - y
+               final_obs.extend([zombie_rel_x/1280,zombie_rel_y/720,1.0])
+        print(final_obs)
+        return np.array(final_obs, dtype=np.float32)
 
 
 class CustomPredictFunction(Callable):
@@ -61,7 +107,7 @@ class CustomPredictFunction(Callable):
         self.modules = MultiRLModule.from_checkpoint(best_checkpoint)
 
     def __call__(self, observation, agent, *args, **kwargs):
-        rl_module = self.modules[agent]
+        rl_module = self.modules["shared_policy"]
         fwd_ins = {"obs": torch.Tensor(observation).unsqueeze(0)}
         fwd_outputs = rl_module.forward_inference(fwd_ins)
         action_dist_class = rl_module.get_inference_action_dist_cls()

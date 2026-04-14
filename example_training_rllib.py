@@ -37,35 +37,28 @@ def algo_config(id_env, policies, policies_to_train):
                      sample_timeout_s=500)
         
         .multi_agent(
-            policies={x for x in policies},
-            policy_mapping_fn=lambda agent_id, *args, **kwargs: agent_id,
-            policies_to_train=policies_to_train,
-            #policies = ["shared_policy"],
-            #policies_to_train = ["shared_policy"],
-            #policy_mapping_fn = lambda agent_id, *args, **kwargs: "shared_policy"
+            policies={"shared_policy"},
+            policy_mapping_fn=lambda agent_id, *args, **kwargs: "shared_policy",
+            policies_to_train=["shared_policy"],
         )
-        
         .rl_module(
             rl_module_spec=MultiRLModuleSpec(
                 rl_module_specs={
-                    x: RLModuleSpec(module_class=PPOTorchRLModule, model_config={"fcnet_hiddens": [256,256],
-                                                                                 "vf_share_layers": False,"use_lstm": True,
-                                                                                "lstm_cell_size": 256,})
-                    if x in policies_to_train
-                    else
-                    RLModuleSpec(module_class=RandomRLModule)
-                    for x in policies},
-            ))
+                    "shared_policy": RLModuleSpec(
+                        module_class=PPOTorchRLModule,
+                        model_config={"fcnet_hiddens": [256, 256]},
+                    )
+                }
+            )
+        )
         .training(
-            train_batch_size=4096,
-            lr=1e-4,                
+            train_batch_size=1024,
+            lr=1e-4,
             gamma=0.99,
-            grad_clip=0.2,          
-            num_sgd_iter=5,         
-            entropy_coeff=0.01,
-            
-            #vf_clip_param=10.0,
-            #vf_loss_coeff=0.5,
+            grad_clip=0.3,
+            num_sgd_iter=2,
+            entropy_coeff=0.02,
+            vf_clip_param=10.0
         )
         .debugging(log_level="ERROR")
 
@@ -87,10 +80,10 @@ def training(env, checkpoint_path, max_iterations = 500):
     torch.manual_seed(42)
 
     # Define the configuration for the PPO algorithm
-    policies = [x for x in env.agents]
-    policies_to_train = policies
-    '''policies = ["shared_policy"]
-    policies_to_train = ["shared_policy"]'''
+    '''policies = [x for x in env.agents]
+    policies_to_train = policies'''
+    policies = ["shared_policy"]
+    policies_to_train = ["shared_policy"]
     config = algo_config(id_env, policies, policies_to_train)
 
     # Train the model

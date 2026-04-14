@@ -96,7 +96,7 @@ def evaluate(
     '''net = cv2.dnn.readNet("yolov4-tiny-weights/yolov4-tiny-obj_best(1).weights", "yolov4-tiny-obj.cfg")
     layer_names = net.getLayerNames()
     output_layers = [layer_names[i - 1] for i in net.getUnconnectedOutLayers()]
-    classes = ["zombie"]
+    classes = ["zombie"]'''
 
     cfg_path = "yolov4-tiny-obj.cfg"
     pth_path = "yolov4-tiny-weights/my_yolov4-tiny.pth"
@@ -104,7 +104,7 @@ def evaluate(
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.load_state_dict(torch.load(pth_path, map_location=device))
     model.to(device)
-    model.eval()'''
+    model.eval()
 
     for i, seed in enumerate(seeds):
         env.reset(seed=seed)
@@ -123,6 +123,8 @@ def evaluate(
             #data_generator.generate_angle_data(env,obs,step_count)
             #print(obs)
             
+
+
             step_count += 1
 
             # Accumulate rewards for all agents

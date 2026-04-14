@@ -420,6 +420,20 @@ class VisualWrapper(BaseWrapper):
         if self.render_mode == "human" and was_last:
             # After last agent, env has drawn the new frame into env.screen
             self._show()
+
+
+
+        ##### this is where i will try reward shaping
+        rewards = self.env.rewards
+
+        if len(rewards) > 0:
+            team_reward = sum(rewards.values())
+
+            for k in list(rewards.keys()):
+                rewards[k] = team_reward
+
+
+        #####
         return out
 
 

@@ -125,9 +125,14 @@ class CustomWrapper(BaseWrapper):
             zombie_rel_y = zombies[i][1] - y
             zombie_y_values.append(zombies[i][0])
 
-        sorted_zombies = [val for _, val in sorted(zip(zombie_y_values, zombies))]
+        '''print("--------")
+        print(zombie_y_values)
+        print(zombies)'''
+        sorted_zombies = sorted(zombies, key=lambda z: z[1])
+        #print("----------")
         sorted_zombies.reverse()
         #end = time.perf_counter()
+        #print(sorted_zombies)
         #print(f"Zombie detection took {end-start:.6f} seconds")
         
         #in final obs i normalize to get values from -1 to 1, before normalizing they are either -h to h (x) or -w to w(y)
@@ -140,12 +145,18 @@ class CustomWrapper(BaseWrapper):
                zombie_rel_y = sorted_zombies[i][1] - y
                final_obs.extend([zombie_rel_x/1280,zombie_rel_y/720,1.0])
             for i in range(5-num_zombies):
-                final_obs.extend([0.0,0.0,-1.0])
+                final_obs.extend([0.0,0.0,0.0])
         if num_zombies >= 5:
             for i in range(5):
                zombie_rel_x = sorted_zombies[i][0] - x
                zombie_rel_y = sorted_zombies[i][1] - y
                final_obs.extend([zombie_rel_x/1280,zombie_rel_y/720,1.0])
+        '''if num_zombies>0:
+            zombie_rel_x = sorted_zombies[0][0] - x
+            zombie_rel_y = sorted_zombies[0][1] - y
+            final_obs.extend([zombie_rel_x/1280,zombie_rel_y/720,1.0])
+        else:
+            final_obs.extend([0.0,0.0,0.0])'''
         #print(final_obs)
         final_obs = np.array(final_obs, dtype=np.float32)
 
@@ -242,29 +253,35 @@ class CustomZombieDetectorFunction(Callable):
 
         #print(outputs)
         boxes, confidences = outputs
-        boxes = boxes[0, 0]
-        confidences = confidences[0, 0]
-        boxes_new = []
+        boxes = boxes.squeeze(0).squeeze(1)  
+        confidences = confidences.squeeze(0).squeeze(1)
 
+        boxes_new = []
         for i in range(len(confidences)):
             if confidences[i]>0.9:
                 boxes_new.append(boxes[i])
         
-        #print(boxes_new)
+        #print(max(confidences))
 
         for box in boxes_new:
             box = box.tolist()
-            x, y, w, h = box
+            x,y,w,h = box
 
             x = int(x*1280)
             y = int(y*720)
             w = int(w*1280)
             h = int(h*720)
-            if x+30<1280 and y+30<720:
-                zombie = [x+30,y+30,30,30]
+            if x+15<1280 and y+15<720:
+                zombie = [x+15,y+15,30,30]
             else:
                 zombie = [x,y,30,30]
             matrix.append(zombie)
+        #print(matrix)
+        img = observation.copy()
 
         return matrix
+        
+
+       
+        
 
