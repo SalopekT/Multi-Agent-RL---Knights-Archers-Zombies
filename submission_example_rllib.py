@@ -16,7 +16,8 @@ import gymnasium
 from pettingzoo.utils import BaseWrapper
 from pettingzoo.utils.env import AgentID, ObsType
 from ray.rllib.core.rl_module import MultiRLModule
-
+import pygame
+import time
 
 class CustomWrapper(BaseWrapper):
 
@@ -28,6 +29,7 @@ class CustomWrapper(BaseWrapper):
         return spaces.Box(low = -1.0, high = 1.0, shape = (3*2+5*3,))
 
     def observe(self, agent: AgentID) -> ObsType | None:
+        start = time.perf_counter()
         obs = super().observe(agent)
         state = super().state()
         #print(state)
@@ -60,6 +62,7 @@ class CustomWrapper(BaseWrapper):
                  output_heading = [x_heading,y_heading]
         if len(output_heading)!=2:
             output_heading = [-1,0]
+        #print(output_heading)
         zombies = []
         for object in state:
             if object[0]==1:
@@ -70,6 +73,8 @@ class CustomWrapper(BaseWrapper):
                 zombie_pos = [x,y]
                 zombies.append(zombie_pos)
         num_zombies = len(zombies)
+        #print("Zombies: ")
+        #print(zombies)
         zombie_y_values = []
         for i in range(num_zombies):
             zombie_rel_x = zombies[i][0] - x
@@ -78,9 +83,10 @@ class CustomWrapper(BaseWrapper):
         sorted_zombies = sorted(zombies, key=lambda z: z[1])
         #print("----------")
         sorted_zombies.reverse()
-
+        #print("Sorted zombies: ")
+        #print(sorted_zombies)
         final_obs = [x/1280,y/720,
-                         output_heading[0],output_heading[1],
+                         #output_heading[0],output_heading[1],
                          teammate_pos_rel_x/1280,teammate_pos_rel_y/720]
         if num_zombies<5:
             for i in range(num_zombies):
@@ -96,6 +102,8 @@ class CustomWrapper(BaseWrapper):
                final_obs.extend([zombie_rel_x/1280,zombie_rel_y/720,1.0])
         final_obs = np.array(final_obs, dtype=np.float32)
         #print(final_obs)
+        end = time.perf_counter()
+        print(f"Zombie detection took {end-start:.6f} seconds")
         return final_obs
 
 
@@ -109,8 +117,14 @@ class CustomPredictFunction(Callable):
         best_checkpoint = (Path("results") / "learner_group" / "learner" / "rl_module").resolve()
         self.modules = MultiRLModule.from_checkpoint(best_checkpoint)
 
+        self.archer0_heading = 0
+        self.archer0_direction = pygame.Vector2(0, -1)
+        self.archer1_direction = pygame.Vector2(0, -1)
+        self.archer1_heading = 0
+        self.ang_rate = 10
+
     def __call__(self, observation, agent, *args, **kwargs):
-        rl_module = self.modules["shared_policy"]
+        '''rl_module = self.modules[agent]
         fwd_ins = {"obs": torch.Tensor(observation).unsqueeze(0)}
         fwd_outputs = rl_module.forward_inference(fwd_ins)
         action_dist_class = rl_module.get_inference_action_dist_cls()
@@ -118,6 +132,42 @@ class CustomPredictFunction(Callable):
             fwd_outputs["action_dist_inputs"]
         )
         action = action_dist.sample()[0].numpy()
+        return action'''
+        #here i can insert real heading
+        if agent == "archer_0":
+            new_obs = np.insert(observation, 2, self.archer0_direction[0])
+            new_obs = np.insert(new_obs, 3, self.archer0_direction[1])
+        else:
+            new_obs = np.insert(observation, 2, self.archer1_direction[0])
+            new_obs = np.insert(new_obs, 3, self.archer1_direction[1])
+        #print(new_obs)
+        rl_module = self.modules[agent]
+        fwd_ins = {"obs": torch.Tensor(new_obs).unsqueeze(0)}
+        #fwd_ins = observation
+        fwd_outputs = rl_module.forward_inference(fwd_ins)
+        action_dist_class = rl_module.get_inference_action_dist_cls()
+        action_dist = action_dist_class.from_logits(
+            fwd_outputs["action_dist_inputs"]
+        )
+        action = action_dist.sample()[0].numpy()
+        if action==2: 
+            if agent == "archer_0":
+                self.archer0_heading += self.ang_rate
+                self.archer0_direction = pygame.Vector2(0, -1).rotate(-self.archer0_heading)
+            else:
+                self.archer1_heading += self.ang_rate
+                self.archer1_direction = pygame.Vector2(0, -1).rotate(-self.archer1_heading)
+        elif action==3:
+            if agent == "archer_0":
+                self.archer0_heading -= self.ang_rate
+                self.archer0_direction = pygame.Vector2(0, -1).rotate(-self.archer0_heading)
+            else:
+                self.archer1_heading -= self.ang_rate
+                self.archer1_direction = pygame.Vector2(0, -1).rotate(-self.archer1_heading)
+       
+        
+        print(self.archer0_direction)
+        #print(action)
         return action
 
 

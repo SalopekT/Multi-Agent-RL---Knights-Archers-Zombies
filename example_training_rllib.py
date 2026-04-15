@@ -33,32 +33,33 @@ def algo_config(id_env, policies, policies_to_train):
             enable_env_runner_and_connector_v2=True,
         )
         .environment(env=id_env, disable_env_checking=True)
-        .env_runners(num_env_runners=1,
+        .env_runners(num_env_runners=8,
                      sample_timeout_s=500)
         
-        .multi_agent(
-            policies={"shared_policy"},
-            policy_mapping_fn=lambda agent_id, *args, **kwargs: "shared_policy",
-            policies_to_train=["shared_policy"],
+       .multi_agent(
+            policies={x for x in policies},
+            policy_mapping_fn=lambda agent_id, *args, **kwargs: agent_id,
+            policies_to_train=policies_to_train,
         )
         .rl_module(
             rl_module_spec=MultiRLModuleSpec(
                 rl_module_specs={
-                    "shared_policy": RLModuleSpec(
-                        module_class=PPOTorchRLModule,
-                        model_config={"fcnet_hiddens": [256, 256]},
-                    )
-                }
-            )
-        )
+                    x: RLModuleSpec(module_class=PPOTorchRLModule, model_config={"fcnet_hiddens": [256, 256]})
+                    if x in policies_to_train
+                    else
+                    RLModuleSpec(module_class=RandomRLModule)
+                    for x in policies},
+            ))
         .training(
-            train_batch_size=1024,
+            train_batch_size=8192,
             lr=1e-4,
             gamma=0.99,
-            grad_clip=0.3,
-            num_sgd_iter=2,
-            entropy_coeff=0.02,
-            vf_clip_param=10.0
+            grad_clip=0.5,
+            num_sgd_iter=5,
+            entropy_coeff=0.005,
+            vf_clip_param=10.0,
+            clip_param=0.2,
+            lambda_=0.95
         )
         .debugging(log_level="ERROR")
 
@@ -80,10 +81,10 @@ def training(env, checkpoint_path, max_iterations = 500):
     torch.manual_seed(42)
 
     # Define the configuration for the PPO algorithm
-    '''policies = [x for x in env.agents]
-    policies_to_train = policies'''
-    policies = ["shared_policy"]
-    policies_to_train = ["shared_policy"]
+    policies = [x for x in env.agents]
+    policies_to_train = policies
+    '''policies = ["shared_policy"]
+    policies_to_train = ["shared_policy"]'''
     config = algo_config(id_env, policies, policies_to_train)
 
     # Train the model
@@ -95,7 +96,7 @@ def training(env, checkpoint_path, max_iterations = 500):
         if "env_runners" in result and "agent_episode_returns_mean" in result["env_runners"]:
             print(i, result["env_runners"]["agent_episode_returns_mean"])
             #if result["env_runners"]["agent_episode_returns_mean"]["archer_0"] > 50: # Or any early stopping criterion
-            if result["env_runners"]["agent_episode_returns_mean"]["archer_0"]+result["env_runners"]["agent_episode_returns_mean"]["archer_1"]>110:
+            if result["env_runners"]["agent_episode_returns_mean"]["archer_0"]+result["env_runners"]["agent_episode_returns_mean"]["archer_1"]>200:
                 break
         if i % 5 == 0:
             save_result = algo.save(checkpoint_path)

@@ -112,7 +112,7 @@ def evaluate(
         step_count = 0
         
         for agent in env.agent_iter():
-            print("Current agent: "+env.agent_selection)
+            #print("Current agent: "+env.agent_selection)
             obs, reward, termination, truncation, info = env.last()
             #print(obs)
             #print(env.rewards["archer_0"])

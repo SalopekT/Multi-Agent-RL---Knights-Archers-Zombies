@@ -16,6 +16,7 @@ from NeuralNet.AngleNet import AngleNet
 from gymnasium import spaces
 import os
 import sys
+import pygame
 import math
 sys.path.append("C:\\Users\\tinsa\\KULeuven\\ml-project-2025-2026-main\\ml-project-2025-2026-main\\pytorch-YOLOv4")
 from tool.darknet2pytorch import Darknet
@@ -41,19 +42,22 @@ class CustomWrapper(BaseWrapper):
         super().__init__(env)
         package_directory = os.path.dirname(os.path.abspath(__file__))
         #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        cv2.setNumThreads(0)
+        '''cv2.setNumThreads(0)
         self.device = torch.device("cpu")
         angle_model_path = os.path.join(package_directory, "NeuralNet", "anglenet.pth")
 
         # load the model
         self.model = AngleNet().to(self.device)
         self.model.load_state_dict(torch.load(angle_model_path, map_location=self.device))
-        self.model.eval()
+        self.model.eval()'''
 
         self.zombie_detector = CustomZombieDetectorFunction(self.env)
 
         self.leniency_archer_0 = Leniency(10)
         self.leniency_archer_1 = Leniency(10)
+
+        self.cached_zombies = None
+        self.zombie_tick = 0
 
         self.last_2_rewards = [-1,-1]
 
@@ -63,6 +67,7 @@ class CustomWrapper(BaseWrapper):
         return spaces.Box(low = -1.0, high = 1.0, shape = (3*2+5*3,))
 
     def observe(self, agent: AgentID) -> ObsType | None:
+        start = time.perf_counter()
         max_zombies = self.env.unwrapped.max_zombies
         #obs = self.env.unwrapped.observe(agent)
         obs = self.env.observe(agent)
@@ -84,7 +89,7 @@ class CustomWrapper(BaseWrapper):
         teammate_pos_rel_x = teammate_pos[0]-x
         teammate_pos_rel_y = teammate_pos[1]-y
 
-        x_min = max(0,x-20)
+        '''x_min = max(0,x-20)
         y_min = max(0,y-20)
         x_max = min(1280,x+21)
         y_max = min(720,y+21)
@@ -114,16 +119,21 @@ class CustomWrapper(BaseWrapper):
         
         with torch.no_grad():
             output_heading = self.model(crop_tensor)
-            output_heading = output_heading.squeeze(0)
+            output_heading = output_heading.squeeze(0)'''
         
-        #start = time.perf_counter()
-        zombies = self.zombie_detector(obs)
+        #print(output_heading[0].item(), output_heading[1].item())
+        
+        if self.zombie_tick % 1 == 0:
+            self.cached_zombies = self.zombie_detector(obs)
+        self.zombie_tick += 1
+
+        zombies = self.cached_zombies
         num_zombies = len(zombies)
-        zombie_y_values = []
+        '''zombie_y_values = []
         for i in range(num_zombies):
             zombie_rel_x = zombies[i][0] - x
-            zombie_rel_y = zombies[i][1] - y
-            zombie_y_values.append(zombies[i][0])
+            zombie_rel_y = (720 - zombies[i][1]) - y
+            zombie_y_values.append(720 - zombies[i][0])'''
 
         '''print("--------")
         print(zombie_y_values)
@@ -131,13 +141,13 @@ class CustomWrapper(BaseWrapper):
         sorted_zombies = sorted(zombies, key=lambda z: z[1])
         #print("----------")
         sorted_zombies.reverse()
-        #end = time.perf_counter()
-        #print(sorted_zombies)
+        end = time.perf_counter()
+        print(sorted_zombies)
         #print(f"Zombie detection took {end-start:.6f} seconds")
         
         #in final obs i normalize to get values from -1 to 1, before normalizing they are either -h to h (x) or -w to w(y)
         final_obs = [x/1280,y/720,
-                         output_heading[0].item(),output_heading[1].item(),
+                         #output_heading[0].item(),output_heading[1].item(),
                          teammate_pos_rel_x/1280,teammate_pos_rel_y/720]
         if num_zombies<5:
             for i in range(num_zombies):
@@ -151,16 +161,13 @@ class CustomWrapper(BaseWrapper):
                zombie_rel_x = sorted_zombies[i][0] - x
                zombie_rel_y = sorted_zombies[i][1] - y
                final_obs.extend([zombie_rel_x/1280,zombie_rel_y/720,1.0])
-        '''if num_zombies>0:
-            zombie_rel_x = sorted_zombies[0][0] - x
-            zombie_rel_y = sorted_zombies[0][1] - y
-            final_obs.extend([zombie_rel_x/1280,zombie_rel_y/720,1.0])
-        else:
-            final_obs.extend([0.0,0.0,0.0])'''
-        #print(final_obs)
+        
         final_obs = np.array(final_obs, dtype=np.float32)
 
         final_obs = np.clip(final_obs, -1.0, 1.0)
+        #print(final_obs)
+        end = time.perf_counter()
+        print(f"Zombie detection took {end-start:.6f} seconds")
         return np.array(final_obs, dtype=np.float32)
    
                 
@@ -182,11 +189,29 @@ class CustomPredictFunction(Callable):
         # Here you should load your trained model(s) from a checkpoint in your folder
         best_checkpoint = (Path("results") / "learner_group" / "learner" / "rl_module").resolve()
         self.modules = MultiRLModule.from_checkpoint(best_checkpoint)
+        self.archer0_heading = 0
+        self.archer0_direction = pygame.Vector2(0, -1)
+        self.archer1_direction = pygame.Vector2(0, -1)
+        self.archer1_heading = 0
+        self.ang_rate = 10
+        print("initialized ppo predictor")
         #self.policy = self.modules["shared_policy"]
 
     def __call__(self, observation, agent, *args, **kwargs):
+        #####here i can insert real heading
+        if agent == "archer_0":
+            new_obs = np.insert(observation, 2, self.archer0_direction[0])
+            new_obs = np.insert(new_obs, 3, self.archer0_direction[1])
+        else:
+            new_obs = np.insert(observation, 2, self.archer1_direction[0])
+            new_obs = np.insert(new_obs, 3, self.archer1_direction[1])
+        '''print(new_obs)
+        print(self.archer0_direction)
+        print(self.archer1_direction)'''
+        #####
+
         rl_module = self.modules[agent]
-        fwd_ins = {"obs": torch.Tensor(observation).unsqueeze(0)}
+        fwd_ins = {"obs": torch.Tensor(new_obs).unsqueeze(0)}
         #fwd_ins = observation
         fwd_outputs = rl_module.forward_inference(fwd_ins)
         action_dist_class = rl_module.get_inference_action_dist_cls()
@@ -194,22 +219,30 @@ class CustomPredictFunction(Callable):
             fwd_outputs["action_dist_inputs"]
         )
         action = action_dist.sample()[0].numpy()
+        if action==2: 
+            if agent == "archer_0":
+                
+                self.archer0_heading += self.ang_rate
+                self.archer0_direction = pygame.Vector2(0, -1).rotate(-self.archer0_heading)
+            else:
+                
+                self.archer1_heading += self.ang_rate
+                self.archer1_direction = pygame.Vector2(0, -1).rotate(-self.archer1_heading)
+        elif action==3:
+            if agent == "archer_0":
+                
+                self.archer0_heading -= self.ang_rate
+                self.archer0_direction = pygame.Vector2(0, -1).rotate(-self.archer0_heading)
+            else:
+                
+                self.archer1_heading -= self.ang_rate
+                self.archer1_direction = pygame.Vector2(0, -1).rotate(-self.archer1_heading)
+       
+        
+        
+        #print(action)
         return action
-        '''fwd_outputs = self.policy.forward_inference(fwd_ins)
-
-        action_dist_class = self.policy.get_inference_action_dist_cls()
-        action_dist = action_dist_class.from_logits(
-            fwd_outputs["action_dist_inputs"]
-        )
-
-        action = action_dist.sample()[0].numpy()
-        return action'''
-    
-    '''def __init__(self, env):
-        self.env = env
-
-    def __call__(self, observation, agent, *args, **kwargs):
-        return self.env.action_space(agent).sample()'''
+        
 
 
 class CustomZombieDetectorFunction(Callable):
@@ -218,7 +251,7 @@ class CustomZombieDetectorFunction(Callable):
     """
         
     def __init__(self, env: gymnasium.Env):
-        cv2.setNumThreads(0)
+        #cv2.setNumThreads(0)
         package_directory = os.path.dirname(os.path.abspath(__file__))
 
         # construct absolute paths to YOLO weights and cfg
@@ -228,6 +261,7 @@ class CustomZombieDetectorFunction(Callable):
         self.model = Darknet(cfg_path)
         #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.device = torch.device("cpu")
+        #self.device = torch.device("cuda")
         self.model.load_state_dict(torch.load(weights_path, map_location=self.device))
         self.model.to(self.device)
         self.model.eval()
@@ -248,7 +282,7 @@ class CustomZombieDetectorFunction(Callable):
         img = torch.from_numpy(img).float() / 255.0  
         img = img.permute(2, 0, 1).unsqueeze(0).to(self.device) 
 
-        with torch.no_grad():
+        with torch.inference_mode():
             outputs = self.model(img)
 
         #print(outputs)
@@ -256,10 +290,12 @@ class CustomZombieDetectorFunction(Callable):
         boxes = boxes.squeeze(0).squeeze(1)  
         confidences = confidences.squeeze(0).squeeze(1)
 
-        boxes_new = []
+        '''boxes_new = []
         for i in range(len(confidences)):
             if confidences[i]>0.9:
-                boxes_new.append(boxes[i])
+                boxes_new.append(boxes[i])'''
+        mask = confidences > 0.9
+        boxes_new = boxes[mask]
         
         #print(max(confidences))
 

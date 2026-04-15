@@ -424,13 +424,16 @@ class VisualWrapper(BaseWrapper):
 
 
         ##### this is where i will try reward shaping
-        rewards = self.env.rewards
+        '''rewards = self.env.rewards
 
         if len(rewards) > 0:
             team_reward = sum(rewards.values())
 
+            alpha = 0.15
+
             for k in list(rewards.keys()):
-                rewards[k] = team_reward
+                individual = rewards[k]
+                rewards[k] = individual + alpha * team_reward'''
 
 
         #####
