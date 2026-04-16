@@ -18,12 +18,30 @@ from pettingzoo.utils.env import AgentID, ObsType
 from ray.rllib.core.rl_module import MultiRLModule
 import pygame
 import time
+from NeuralNet.AngleNet import AngleNet
+import os
+import sys
+import cv2
+sys.path.append("C:\\Users\\tinsa\\KULeuven\\ml-project-2025-2026-main\\ml-project-2025-2026-main\\pytorch-YOLOv4")
+from tool.darknet2pytorch import Darknet
 
 class CustomWrapper(BaseWrapper):
 
     def __init__(self, env, target_size=(64, 64)):
         super().__init__(env)
         self.target_size = target_size  # (H, W)
+        package_directory = os.path.dirname(os.path.abspath(__file__))
+        #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        self.device = torch.device("cpu")
+        angle_model_path = os.path.join(package_directory, "NeuralNet", "anglenet.pth")
+
+        # load the model
+        self.model = AngleNet().to(self.device)
+        self.model.load_state_dict(torch.load(angle_model_path, map_location=self.device))
+        self.model.eval()
+
+        self.zombie_detector = CustomZombieDetectorFunction(self.env)
 
     def observation_space(self, agent: AgentID):
         return spaces.Box(low = -1.0, high = 1.0, shape = (3*2+5*3,))
@@ -31,6 +49,10 @@ class CustomWrapper(BaseWrapper):
     def observe(self, agent: AgentID) -> ObsType | None:
         start = time.perf_counter()
         obs = super().observe(agent)
+        screen = pygame.surfarray.array3d(self.unwrapped.screen)
+        screen = np.swapaxes(screen, 0, 1)
+
+        screen = screen.astype(np.uint8)
         state = super().state()
         #print(state)
         own_pos = [0,0]
@@ -49,6 +71,43 @@ class CustomWrapper(BaseWrapper):
         teammate_pos_rel_x = teammate_pos[0]-x
         teammate_pos_rel_y = teammate_pos[1]-y
 
+        x_min = max(0,x-20)
+        y_min = max(0,y-20)
+        x_max = min(1280,x+21)
+        y_max = min(720,y+21)
+                
+        crop = screen[y_min:y_max, x_min:x_max, :]
+        h, w, c = crop.shape
+
+        to_pad_bottom,to_pad_top,to_pad_right,to_pad_left=0,0,0,0
+        if h<41:
+            to_pad = 41-h
+            to_pad_bottom = to_pad//2
+            to_pad_top = to_pad-to_pad_bottom
+
+        if w<41:
+            to_pad = 41-w
+            to_pad_right = to_pad//2
+            to_pad_left = to_pad-to_pad_right
+
+        if h<41 or w <41:
+            crop = np.pad(crop,((to_pad_bottom, to_pad_top),(to_pad_left, to_pad_right),(0,0)),mode='constant',constant_values=0)
+        
+        
+        self.model.eval()
+        crop_tensor = ((torch.from_numpy(crop).float()/255.0)-0.5)*2
+        crop_tensor = crop_tensor.permute(2, 0, 1)
+        crop_tensor = crop_tensor.unsqueeze(0) 
+        
+        with torch.no_grad():
+            output_heading1 = self.model(crop_tensor)
+            output_heading1 = output_heading1.squeeze(0)
+        print([output_heading1[0].item(), output_heading1[1].item()])
+        zombies = self.zombie_detector(screen)
+        sorted_zombies = sorted(zombies, key=lambda z: z[1])
+        #print("----------")
+        sorted_zombies.reverse()
+        #print(sorted_zombies)
         output_heading = []
         for object in obs:
              if np.isscalar(object[5]) and object[5]==1:
@@ -62,7 +121,7 @@ class CustomWrapper(BaseWrapper):
                  output_heading = [x_heading,y_heading]
         if len(output_heading)!=2:
             output_heading = [-1,0]
-        #print(output_heading)
+        print(output_heading)
         zombies = []
         for object in state:
             if object[0]==1:
@@ -83,6 +142,8 @@ class CustomWrapper(BaseWrapper):
         sorted_zombies = sorted(zombies, key=lambda z: z[1])
         #print("----------")
         sorted_zombies.reverse()
+        #print(sorted_zombies)
+        print("----------------")
         #print("Sorted zombies: ")
         #print(sorted_zombies)
         final_obs = [x/1280,y/720,
@@ -166,24 +227,76 @@ class CustomPredictFunction(Callable):
                 self.archer1_direction = pygame.Vector2(0, -1).rotate(-self.archer1_heading)
        
         
-        print(self.archer0_direction)
+        #print(self.archer0_direction)
         #print(action)
         return action
 
 
 class CustomZombieDetectorFunction(Callable):
-    """Returns random detections."""
-
     def __init__(self, env: gymnasium.Env):
-        pass
+        #cv2.setNumThreads(0)
+        package_directory = os.path.dirname(os.path.abspath(__file__))
+
+        # construct absolute paths to YOLO weights and cfg
+        weights_path = os.path.join(package_directory, "yolov4-tiny-weights", "my_yolov4-tiny.pth")
+        cfg_path = os.path.join(package_directory, "yolov4-tiny-obj.cfg")
+
+        self.model = Darknet(cfg_path)
+        #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cpu")
+        #self.device = torch.device("cuda")
+        self.model.load_state_dict(torch.load(weights_path, map_location=self.device))
+        self.model.to(self.device)
+        self.model.eval()
+        
+        
 
     def __call__(self, observation, *args, **kwargs):
-        nb_zombies_detected = random.randint(0,4)
-        zombie_rects = np.zeros((nb_zombies_detected, 4))
-        for i in range(nb_zombies_detected):
-            x = random.randint(0,1280-29)
-            y = random.randint(0,720-31)
-            w, h = 29, 31
-            zombie_rects[i, :] = [x, y, w, h]
-        return zombie_rects
+        """Returns a matrix of shape (nb_zombies, nb_attributes), where
+        the attributes are defining a rectangle with (x,y,width,heigh) and
+        indicate where the zombies are. The zombies are ordered from most
+        likely to least likely positions. The evaluation uses the first k
+        items if there are k zombies on the screen.
+        """
+        
+        matrix = []
+        img = cv2.resize(observation, (416, 416))
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img = torch.from_numpy(img).float() / 255.0  
+        img = img.permute(2, 0, 1).unsqueeze(0).to(self.device) 
+
+        with torch.inference_mode():
+            outputs = self.model(img)
+
+        #print(outputs)
+        boxes, confidences = outputs
+        boxes = boxes.squeeze(0).squeeze(1)  
+        confidences = confidences.squeeze(0).squeeze(1)
+
+        '''boxes_new = []
+        for i in range(len(confidences)):
+            if confidences[i]>0.9:
+                boxes_new.append(boxes[i])'''
+        mask = confidences > 0.9
+        boxes_new = boxes[mask]
+        
+        #print(max(confidences))
+
+        for box in boxes_new:
+            box = box.tolist()
+            x,y,w,h = box
+
+            x = int(x*1280)
+            y = int(y*720)
+            w = int(w*1280)
+            h = int(h*720)
+            if x+15<1280 and y+15<720:
+                zombie = [x+15,y+15,30,30]
+            else:
+                zombie = [x,y,30,30]
+            matrix.append(zombie)
+        #print(matrix)
+        img = observation.copy()
+
+        return matrix
 

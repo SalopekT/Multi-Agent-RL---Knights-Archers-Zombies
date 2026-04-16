@@ -42,24 +42,26 @@ class CustomWrapper(BaseWrapper):
         super().__init__(env)
         package_directory = os.path.dirname(os.path.abspath(__file__))
         #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        '''cv2.setNumThreads(0)
+
         self.device = torch.device("cpu")
         angle_model_path = os.path.join(package_directory, "NeuralNet", "anglenet.pth")
 
         # load the model
         self.model = AngleNet().to(self.device)
         self.model.load_state_dict(torch.load(angle_model_path, map_location=self.device))
-        self.model.eval()'''
+        self.model.eval()
 
         self.zombie_detector = CustomZombieDetectorFunction(self.env)
+        self.zombie_tick=0
+        self.cached_zombies = []
 
-        self.leniency_archer_0 = Leniency(10)
+        '''self.leniency_archer_0 = Leniency(10)
         self.leniency_archer_1 = Leniency(10)
 
         self.cached_zombies = None
         self.zombie_tick = 0
 
-        self.last_2_rewards = [-1,-1]
+        self.last_2_rewards = [-1,-1]'''
 
 
 
@@ -67,9 +69,11 @@ class CustomWrapper(BaseWrapper):
         return spaces.Box(low = -1.0, high = 1.0, shape = (3*2+5*3,))
 
     def observe(self, agent: AgentID) -> ObsType | None:
-        start = time.perf_counter()
-        max_zombies = self.env.unwrapped.max_zombies
-        #obs = self.env.unwrapped.observe(agent)
+        #start = time.perf_counter()
+        
+        '''screen = pygame.surfarray.array3d(self.env.unwrapped.screen)
+        screen= np.swapaxes(screen,0,1)'''
+
         obs = self.env.observe(agent)
         state = self.env.state()
 
@@ -89,7 +93,7 @@ class CustomWrapper(BaseWrapper):
         teammate_pos_rel_x = teammate_pos[0]-x
         teammate_pos_rel_y = teammate_pos[1]-y
 
-        '''x_min = max(0,x-20)
+        x_min = max(0,x-20)
         y_min = max(0,y-20)
         x_max = min(1280,x+21)
         y_max = min(720,y+21)
@@ -119,16 +123,16 @@ class CustomWrapper(BaseWrapper):
         
         with torch.no_grad():
             output_heading = self.model(crop_tensor)
-            output_heading = output_heading.squeeze(0)'''
+            output_heading = output_heading.squeeze(0)
         
         #print(output_heading[0].item(), output_heading[1].item())
         
-        if self.zombie_tick % 1 == 0:
+        '''if self.zombie_tick % 3 == 0:
             self.cached_zombies = self.zombie_detector(obs)
-        self.zombie_tick += 1
+        self.zombie_tick += 1'''
+        num_zombies = len(self.cached_zombies)
+        zombies = self.zombie_detector(obs)
 
-        zombies = self.cached_zombies
-        num_zombies = len(zombies)
         '''zombie_y_values = []
         for i in range(num_zombies):
             zombie_rel_x = zombies[i][0] - x
@@ -141,13 +145,11 @@ class CustomWrapper(BaseWrapper):
         sorted_zombies = sorted(zombies, key=lambda z: z[1])
         #print("----------")
         sorted_zombies.reverse()
-        end = time.perf_counter()
-        print(sorted_zombies)
         #print(f"Zombie detection took {end-start:.6f} seconds")
         
         #in final obs i normalize to get values from -1 to 1, before normalizing they are either -h to h (x) or -w to w(y)
         final_obs = [x/1280,y/720,
-                         #output_heading[0].item(),output_heading[1].item(),
+                         output_heading[0].item(),output_heading[1].item(),
                          teammate_pos_rel_x/1280,teammate_pos_rel_y/720]
         if num_zombies<5:
             for i in range(num_zombies):
@@ -166,8 +168,8 @@ class CustomWrapper(BaseWrapper):
 
         final_obs = np.clip(final_obs, -1.0, 1.0)
         #print(final_obs)
-        end = time.perf_counter()
-        print(f"Zombie detection took {end-start:.6f} seconds")
+        #end = time.perf_counter()
+        #print(f"Zombie detection took {end-start:.6f} seconds")
         return np.array(final_obs, dtype=np.float32)
    
                 
@@ -187,7 +189,7 @@ class CustomPredictFunction(Callable):
     def __init__(self, env):
 
         # Here you should load your trained model(s) from a checkpoint in your folder
-        best_checkpoint = (Path("results") / "learner_group" / "learner" / "rl_module").resolve()
+        best_checkpoint = (Path("results2") / "learner_group" / "learner" / "rl_module").resolve()
         self.modules = MultiRLModule.from_checkpoint(best_checkpoint)
         self.archer0_heading = 0
         self.archer0_direction = pygame.Vector2(0, -1)
@@ -199,19 +201,19 @@ class CustomPredictFunction(Callable):
 
     def __call__(self, observation, agent, *args, **kwargs):
         #####here i can insert real heading
-        if agent == "archer_0":
+        '''if agent == "archer_0":
             new_obs = np.insert(observation, 2, self.archer0_direction[0])
             new_obs = np.insert(new_obs, 3, self.archer0_direction[1])
         else:
             new_obs = np.insert(observation, 2, self.archer1_direction[0])
             new_obs = np.insert(new_obs, 3, self.archer1_direction[1])
-        '''print(new_obs)
+        print(new_obs)
         print(self.archer0_direction)
         print(self.archer1_direction)'''
         #####
 
         rl_module = self.modules[agent]
-        fwd_ins = {"obs": torch.Tensor(new_obs).unsqueeze(0)}
+        fwd_ins = {"obs": torch.Tensor(observation).unsqueeze(0)}
         #fwd_ins = observation
         fwd_outputs = rl_module.forward_inference(fwd_ins)
         action_dist_class = rl_module.get_inference_action_dist_cls()
@@ -219,7 +221,7 @@ class CustomPredictFunction(Callable):
             fwd_outputs["action_dist_inputs"]
         )
         action = action_dist.sample()[0].numpy()
-        if action==2: 
+        '''if action==2: 
             if agent == "archer_0":
                 
                 self.archer0_heading += self.ang_rate
@@ -240,7 +242,7 @@ class CustomPredictFunction(Callable):
        
         
         
-        #print(action)
+        #print(action)'''
         return action
         
 

@@ -88,7 +88,7 @@ def main():
     for epoch in range(1, num_epochs+1):
         train(model, device, train_loader, optimizer, epoch)
 
-    torch.save(model.state_dict(), "anglenet2.pth")
+    torch.save(model.state_dict(), "anglenet.pth")
     print("Model saved!")
 
 if __name__ == "__main__":

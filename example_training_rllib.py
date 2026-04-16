@@ -19,7 +19,7 @@ import numpy as np
 import torch
 
 from utils import create_environment
-from submission_example_rllib import CustomWrapper
+from submission import CustomWrapper
 
 
 
@@ -51,7 +51,7 @@ def algo_config(id_env, policies, policies_to_train):
                     for x in policies},
             ))
         .training(
-            train_batch_size=8192,
+            train_batch_size=4096,
             lr=1e-4,
             gamma=0.99,
             grad_clip=0.5,
@@ -116,7 +116,7 @@ if __name__ == "__main__":
     env = CustomWrapper(env)
 
     # Running training routine
-    checkpoint_path = str(Path("results").resolve())
+    checkpoint_path = str(Path("results2").resolve())
     training(env, checkpoint_path, max_iterations = 500)
 
 
