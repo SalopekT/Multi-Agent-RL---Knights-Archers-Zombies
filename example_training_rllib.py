@@ -116,7 +116,7 @@ if __name__ == "__main__":
     env = CustomWrapper(env)
 
     # Running training routine
-    checkpoint_path = str(Path("results2").resolve())
+    checkpoint_path = str(Path("results3").resolve())
     training(env, checkpoint_path, max_iterations = 500)
 
 

@@ -85,13 +85,13 @@ class CustomWrapper(BaseWrapper):
         own_pos = [0,0]
         teammate_pos = [0,0]
         archers = list(self.env.unwrapped.archer_list)
-        '''if len(archers)==2:
+        if len(archers)==2:
             if (agent == "archer_0"):
                 own_pos = archers[0].rect.center
                 teammate_pos = archers[1].rect.center
             else:
                 own_pos = archers[1].rect.center
-                teammate_pos = archers[0].rect.center'''
+                teammate_pos = archers[0].rect.center
                
         
         x, y = own_pos
@@ -132,9 +132,10 @@ class CustomWrapper(BaseWrapper):
         
         #print(output_heading[0].item(), output_heading[1].item())
         
-
+        
         zombies = self.zombie_detector(obs)
         num_zombies = len(zombies)
+       
         sorted_zombies = sorted(zombies, key=lambda z: z[1])
         #print("----------")
         sorted_zombies.reverse()
@@ -142,13 +143,8 @@ class CustomWrapper(BaseWrapper):
         #print(f"Zombie detection took {end-start:.6f} seconds")
         
         #in final obs i normalize to get values from -1 to 1, before normalizing they are either -h to h (x) or -w to w(y)
-        '''if agent == "archer_0":
-            output_heading = self.archer0_direction
-        elif agent == "archer_1":
-            output_heading = self.archer1_direction'''
         final_obs = [x/1280,y/720,
                          output_heading[0].item(),output_heading[1].item(),
-                         #output_heading[0], output_heading[1],
                          teammate_pos_rel_x/1280,teammate_pos_rel_y/720]
         #print(self.angle_archer0)
         if num_zombies<5:
@@ -172,42 +168,6 @@ class CustomWrapper(BaseWrapper):
         #print(f"Zombie detection took {end-start:.6f} seconds")
         return np.array(final_obs, dtype=np.float32)
    
-                
-    '''def step(self, action):
-        agent = self.env.agent_selection
-        if action==2: 
-            if agent == "archer_0":
-                
-                self.angle_archer0 += self.ang_rate
-                self.archer0_direction = pygame.Vector2(0, -1).rotate(-self.angle_archer0)
-            else:
-                
-                self.angle_archer1 += self.ang_rate
-                self.archer1_direction = pygame.Vector2(0, -1).rotate(-self.angle_archer1)
-        elif action==3:
-            if agent == "archer_0":
-                
-                self.angle_archer0 -= self.ang_rate
-                self.archer0_direction = pygame.Vector2(0, -1).rotate(-self.angle_archer0)
-            else:
-                
-                self.angle_archer1 -= self.ang_rate
-                self.archer1_direction = pygame.Vector2(0, -1).rotate(-self.angle_archer1)
-    
-        #print(self.angle_archer0)
-        return self.env.step(action)
-            
-    def reset(self, seed=None, options=None):
-        self.angle_archer0 = 0
-        self.angle_archer1 = 0
-
-        self.archer0_direction = pygame.Vector2(0, -1)
-        self.archer1_direction = pygame.Vector2(0, -1)
-
-        self.zombie_tick = 0
-        self.cached_zombies = []
-
-        return self.env.reset(seed=seed, options=options)'''
 
             
 
@@ -218,7 +178,7 @@ class CustomPredictFunction(Callable):
     def __init__(self, env):
 
         # Here you should load your trained model(s) from a checkpoint in your folder
-        best_checkpoint = (Path("results3") / "learner_group" / "learner" / "rl_module").resolve()
+        best_checkpoint = (Path("results4") / "learner_group" / "learner" / "rl_module").resolve()
         self.modules = MultiRLModule.from_checkpoint(best_checkpoint)
         self.archer0_heading = 0
         self.archer0_direction = pygame.Vector2(0, -1)
@@ -292,6 +252,7 @@ class CustomZombieDetectorFunction(Callable):
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img = torch.from_numpy(img).float() / 255.0  
         img = img.permute(2, 0, 1).unsqueeze(0).to(self.device) 
+        
 
         with torch.inference_mode():
             outputs = self.model(img)
@@ -305,7 +266,7 @@ class CustomZombieDetectorFunction(Callable):
         for i in range(len(confidences)):
             if confidences[i]>0.9:
                 boxes_new.append(boxes[i])'''
-        mask = confidences > 0.9
+        mask = confidences > 0.8
         boxes_new = boxes[mask]
         
         #print(max(confidences))
@@ -314,23 +275,24 @@ class CustomZombieDetectorFunction(Callable):
             box = box.tolist()
             x,y,w,h = box
 
-            x = int(x*1280)
-            y = int(y*720)
+            x = int(x*1280)+15
+            y = int(y*720)+15
             w = int(w*1280)
             h = int(h*720)
             if x+15<1280 and y+15<720:
-                zombie = [x+30,y+30,30,30]
+                zombie = [x,y,30,30]
             else:
                 zombie = [x,y,30,30]
             matrix.append(zombie)
-            # Top-left and bottom-right corners
+             # Top-left and bottom-right corners
             pt1 = (x, y)
-            pt2 = (x + w, y + h)
+            pt2 = (x + 30, y + 30)
 
             # Draw rectangle (color = green, thickness = 2)
             cv2.rectangle(img, pt1, pt2, (0, 255, 0), 2)
         #print(matrix)
         cv2.imwrite("debug_output.png", img)
+        #print(matrix)
         
 
         return matrix
