@@ -52,7 +52,7 @@ def calculate_vector_field_boltzmann(game, P,Q, u1, u2):
 def calculate_vector_field_lenient(game, P,Q, u1, u2, N):
     vector_field_x = np.zeros((100,100))
     vector_field_y = np.zeros((100,100))
-
+    u2 = u2.T
     for a in range(100):
         for b in range(100):
             strategy1 = np.array([P[a,b], 1-P[a,b]])
@@ -103,7 +103,7 @@ def calculate_vector_field_lenient(game, P,Q, u1, u2, N):
                         if u2[i,k] < a_ij
                     )
                     exp_sum3 = sum3 ** N
-                    player2_expected_reward[j] += (a_ij*p_j/sum1)*(exp_sum2-exp_sum3)
+                    player2_expected_reward[i] += (a_ij*p_j/sum1)*(exp_sum2-exp_sum3)
 
             helper_term = strategy1/strategy1[0]
             helper_term = np.log(helper_term)

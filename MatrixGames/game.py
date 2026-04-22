@@ -202,6 +202,8 @@ class LenientBoltzmannPlayer(Player):
 
           q1 = random.randint(1,10)
           q2 = random.randint(1,10)
+          #q1 = 5
+          #q2 = 5
           self._q_table = [q1,q2]
 
     @property 
