@@ -52,8 +52,10 @@ class Game:
 
     def reinit_strategies(self):
          for player in self._player_list:
-            q1 = random.randint(1,10)
-            q2 = random.randint(1,10)
+            #q1 = random.randint(1,10)
+            #q2 = random.randint(1,10)
+            q1 = random.random()
+            q2 = random.random()
             player._q_table = [q1,q2]
 
     
@@ -162,8 +164,10 @@ class BoltzmannPlayer(Player):
         super().__init__(game,i)
         self._temperature = temperature
         if len(super().strategy)==2:
-             q1 = random.randint(1,10)
-             q2 = random.randint(1,10)
+             #q1 = random.randint(1,10)
+             #q2 = random.randint(1,10)
+             q1 = random.random()
+             q2 = random.random()
              self._q_table = [q1,q2]
              
 
@@ -200,8 +204,10 @@ class LenientBoltzmannPlayer(Player):
           for action in range(len(game.A)):
                self._last_N_rewards[action] = []
 
-          q1 = random.randint(1,10)
-          q2 = random.randint(1,10)
+          #q1 = random.randint(1,10)
+          #q2 = random.randint(1,10)
+          q1 = random.random()
+          q2 = random.random()
           #q1 = 5
           #q2 = 5
           self._q_table = [q1,q2]

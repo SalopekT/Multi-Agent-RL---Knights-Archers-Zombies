@@ -288,10 +288,10 @@ class CustomZombieDetectorFunction(Callable):
             pt1 = (x, y)
             pt2 = (x + 30, y + 30)
 
-            # Draw rectangle (color = green, thickness = 2)
-            cv2.rectangle(img, pt1, pt2, (0, 255, 0), 2)
+            
+            #cv2.rectangle(img, pt1, pt2, (0, 255, 0), 2)
         #print(matrix)
-        cv2.imwrite("debug_output.png", img)
+        #cv2.imwrite("debug_output.png", img)
         #print(matrix)
         
 

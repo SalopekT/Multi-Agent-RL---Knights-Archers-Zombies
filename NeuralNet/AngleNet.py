@@ -22,7 +22,6 @@ class AngleNet(nn.Module):
         self.fc2 = nn.Linear(128, 2)
 
     def forward(self, x):
-        # x = x.permute(0, 3, 1, 2)  # if needed
 
         x = self.conv1(x)
         x = F.relu(x)
