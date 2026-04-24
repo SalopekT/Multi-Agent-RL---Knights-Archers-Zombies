@@ -425,17 +425,25 @@ class VisualWrapper(BaseWrapper):
 
         ##### this is where i will try reward shaping
         '''rewards = self.env.rewards
+        curr_agent = self.env.agent_selection
+        if curr_agent == "archer_0":
+            teammate = "archer_1"
+        else:
+            teammate = "archer_0"
+        #print(rewards)
+        #print(curr_agent)
+        my_reward = 0
+        team_reward = 0
+        my_reward = rewards.get(curr_agent, 0.0)
+        teammate_reward = rewards.get(teammate, 0.0)
 
-        if len(rewards) > 0:
-            team_reward = sum(rewards.values())
+        for a in [curr_agent, teammate]:
+            if a in rewards:
+                own = rewards.get(a, 0.0)
+                other = rewards.get(teammate if a == curr_agent else curr_agent, 0.0)
+                self.env.rewards[a] = 0.6 * own + 0.66 * other
 
-            alpha = 0.15
-
-            for k in list(rewards.keys()):
-                individual = rewards[k]
-                rewards[k] = individual + alpha * team_reward'''
-
-
+        print(self.env.rewards)'''
         #####
         return out
 

@@ -124,12 +124,12 @@ def evaluate(
             #print(obs)
             
 
-
             step_count += 1
 
             # Accumulate rewards for all agents
             for a in env.agents:
                 rewards[a] += env.rewards[a]
+                #print(env.rewards[a])
 
             if termination or truncation:
                 episode_lengths.append(step_count)
