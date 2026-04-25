@@ -54,9 +54,15 @@ class Game:
          for player in self._player_list:
             #q1 = random.randint(1,10)
             #q2 = random.randint(1,10)
-            q1 = random.random()
-            q2 = random.random()
-            player._q_table = [q1,q2]
+            if len(self.N)==2:
+                q1 = random.random()
+                q2 = random.random()
+                player._q_table = [q1,q2]
+            elif len(self.N)==3:
+                q1 = random.random()
+                q2 = random.random()
+                q3 = random.random()
+                player._q_table = [q1,q2,q3]
 
     
     def add_player(self,player):
@@ -73,24 +79,43 @@ class Game:
     
     def play_round(self):
         if (len(self._player_list)==len(self._N)):
-            #print("Making moves")
-            moves = []
-            moves_names = []
-            for player in self._player_list:
-                move = player.make_move()
-                moves.append(move)
-                moves_names.append(self._A[move])
-            moves_tuple = tuple(moves)
-            moves_names_tuple = tuple(moves_names)
-            utility = self._u[moves_names_tuple]
-            #print(utility)
-            for i in range(len(self._player_list)):
-                self._player_list[i].q_learning_update(moves_tuple[i],utility[i],self._alpha)
-                if i==0:
-                    self._trajectory_p1.append(self._player_list[i].strategy[0])
-                elif i==1:
-                    self._trajectory_p2.append(self._player_list[i].strategy[0])
-            return utility
+            if (self._player_list[0]!=self._player_list[1]):
+                #print("Making moves")
+                moves = []
+                moves_names = []
+                for player in self._player_list:
+                    move = player.make_move()
+                    moves.append(move)
+                    moves_names.append(self._A[move])
+                moves_tuple = tuple(moves)
+                moves_names_tuple = tuple(moves_names)
+                utility = self._u[moves_names_tuple]
+                #print(utility)
+                for i in range(len(self._player_list)):
+                    self._player_list[i].q_learning_update(moves_tuple[i],utility[i],self._alpha)
+                    if i==0:
+                        self._trajectory_p1.append(self._player_list[i].strategy[0])
+                    elif i==1:
+                        self._trajectory_p2.append(self._player_list[i].strategy[0])
+                return utility
+            else:
+                moves = []
+                moves_names = []
+                for player in self._player_list:
+                    move = player.make_move()
+                    moves.append(move)
+                    moves_names.append(self._A[move])
+                moves_tuple = tuple(moves)
+                moves_names_tuple = tuple(moves_names)
+                utility = self._u[moves_names_tuple]
+                #print(utility)
+                for i in range(len(self._player_list)):
+                    self._player_list[i].q_learning_update(moves_tuple[i],utility[i],self._alpha)
+                    if i==0:
+                        self._trajectory_p1.append(self._player_list[i].strategy[0])
+                    elif i==1:
+                        self._trajectory_p2.append(self._player_list[i].strategy[0])
+                return utility
         
     
     
@@ -169,6 +194,11 @@ class BoltzmannPlayer(Player):
              q1 = random.random()
              q2 = random.random()
              self._q_table = [q1,q2]
+        elif len(super().strategy)==3:
+             q1 = random.random()
+             q2 = random.random()
+             q3 = random.random()
+             self._q_table = [q1,q2,q3]
              
 
      @property 
@@ -204,13 +234,18 @@ class LenientBoltzmannPlayer(Player):
           for action in range(len(game.A)):
                self._last_N_rewards[action] = []
 
-          #q1 = random.randint(1,10)
-          #q2 = random.randint(1,10)
-          q1 = random.random()
-          q2 = random.random()
-          #q1 = 5
-          #q2 = 5
-          self._q_table = [q1,q2]
+          if len(super().strategy)==2:
+             #q1 = random.randint(1,10)
+             #q2 = random.randint(1,10)
+             q1 = random.random()
+             q2 = random.random()
+             self._q_table = [q1,q2]
+          elif len(super().strategy)==3:
+             q1 = random.random()
+             q2 = random.random()
+             q3 = random.random()
+             self._q_table = [q1,q2,q3]
+              
 
     @property 
     def temperature(self): 
