@@ -54,11 +54,13 @@ class Game:
          for player in self._player_list:
             #q1 = random.randint(1,10)
             #q2 = random.randint(1,10)
-            if len(self.N)==2:
+            print(self.A)
+            if len(self.A)==2:
                 q1 = random.random()
                 q2 = random.random()
                 player._q_table = [q1,q2]
-            elif len(self.N)==3:
+            elif len(self.A)==3:
+                print("reinit")
                 q1 = random.random()
                 q2 = random.random()
                 q3 = random.random()
@@ -99,6 +101,7 @@ class Game:
                         self._trajectory_p2.append(self._player_list[i].strategy[0])
                 return utility
             else:
+                #print("3 aaction update")
                 moves = []
                 moves_names = []
                 for player in self._player_list:
@@ -109,12 +112,11 @@ class Game:
                 moves_names_tuple = tuple(moves_names)
                 utility = self._u[moves_names_tuple]
                 #print(utility)
-                for i in range(len(self._player_list)):
-                    self._player_list[i].q_learning_update(moves_tuple[i],utility[i],self._alpha)
-                    if i==0:
-                        self._trajectory_p1.append(self._player_list[i].strategy[0])
-                    elif i==1:
-                        self._trajectory_p2.append(self._player_list[i].strategy[0])
+                self._player_list[0].q_learning_update(moves_tuple[0],utility[0],self._alpha)
+                self._trajectory_p1.append([self._player_list[0].strategy[0],
+                                            self._player_list[0].strategy[1],
+                                            self._player_list[0].strategy[2]])
+                
                 return utility
         
     

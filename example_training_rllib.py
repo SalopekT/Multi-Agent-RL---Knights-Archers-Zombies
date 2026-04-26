@@ -20,7 +20,8 @@ import torch
 
 from utils import create_environment
 from submission import CustomWrapper
-
+from ray.rllib.algorithms.algorithm import Algorithm
+import os
 
 
 def algo_config(id_env, policies, policies_to_train):

@@ -60,38 +60,82 @@ def main():
     stag_hunt.add_player(player1)
     stag_hunt.add_player(player2)'''
 
-    player1 = game.BoltzmannPlayer(rps,1,0.1)
+    '''player1 = game.BoltzmannPlayer(rps,1,0.1)
     #player1._q_table = [10,1.9/3]
 
     player2 = game.BoltzmannPlayer(rps,2,0.1)
-    #player2._q_table = [10,1.9/3]
+    #player2._q_table = [10,1.9/3]'''
 
     '''player3 = game.Player(stag_hunt,2)
     player3.strategy = [0.7,0.3]'''
 
-    '''player1 = game.LenientBoltzmannPlayer(prisoners,1,0.1,10)
-    player2 = game.LenientBoltzmannPlayer(prisoners,2,0.1,10)'''
+    player1 = game.LenientBoltzmannPlayer(rps,1,0.1,10)
+    player2 = game.LenientBoltzmannPlayer(rps,2,0.1,10)
 
     rps.add_player(player1)
-    #rps.add_player(player1)
+    rps.add_player(player1)
 
+    def barycentric_to_cartesian(traj):
+        traj = np.array(traj)
 
-    ax = plots.show_replicator_dynamics_boltzmann_one_pop(rps)
+        p1 = traj[:, 0][:, None]
+        p2 = traj[:, 1][:, None]
+        p3 = traj[:, 2][:, None]
+
+        V1 = np.array([0.0, 0.0])
+        V2 = np.array([1.0, 0.0])
+        V3 = np.array([0.5, np.sqrt(3)/2])
+
+        v_cart = p1*V1 + p2*V2 + p3*V3
+
+        x = v_cart[:, 0]
+        y = v_cart[:, 1]
+
+        return x, y
+
+    ''''ax = plots.show_replicator_dynamics_boltzmann_one_pop(rps)
     
     for epoch in range(5):
         for i in range(1000000):
             rps.play_round()
             if i%100000==0:
                 print(player1.q_table)
-                print(player2.q_table)
+                #print(player2.q_table)
         trajectory_p1, trajectory_p2 = rps.get_last_trajectories()
-        ax.plot(trajectory_p1,trajectory_p2,'r')
+        x, y = barycentric_to_cartesian(trajectory_p1)
+        ax.plot(x, y, 'r')
         rps.empty_trajectories()
         rps.reinit_strategies()
+    triangle = np.array([
+    [0, 0],
+    [1, 0],
+    [0.5, np.sqrt(3)/2],
+    [0, 0]
+    ])
+    ax.plot(triangle[:,0], triangle[:,1], 'k:')
+    plt.show()'''
     
+    ax = plots.show_replicator_dynamics_lenient_boltzmann_one_pop(rps)
+    
+    for epoch in range(5):
+        for i in range(1000000):
+            rps.play_round()
+            if i%100000==0:
+                print(player1.q_table)
+                #print(player2.q_table)
+        trajectory_p1, trajectory_p2 = rps.get_last_trajectories()
+        x, y = barycentric_to_cartesian(trajectory_p1)
+        ax.plot(x, y, 'r')
+        rps.empty_trajectories()
+        rps.reinit_strategies()
+    triangle = np.array([
+    [0, 0],
+    [1, 0],
+    [0.5, np.sqrt(3)/2],
+    [0, 0]
+    ])
+    ax.plot(triangle[:,0], triangle[:,1], 'k:')
     plt.show()
-
-
     '''ax = plots.show_replicator_dynamics_boltzmann(stag_hunt)
     
     for epoch in range(5):
