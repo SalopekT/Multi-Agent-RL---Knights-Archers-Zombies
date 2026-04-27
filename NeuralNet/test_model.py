@@ -31,7 +31,7 @@ def evaluate(model, test_loader, device):
 
 def main():
     # Load first test dataset
-    data0 = np.load("../dataset_angles/dataset_test3.npz")
+    data0 = np.load("../dataset_angles/dataset_test5.npz")
     images0 = data0['images'].astype(np.float32)   # (N,41,41,3)
     labels0 = data0['labels'].astype(np.float32)   # (N,2)
 
@@ -56,8 +56,8 @@ def main():
     print(f"Dataset 0 average angle error: {error0:.2f}°")
 
     num_examples = 20
-    example_images = images0[350:370]
-    example_labels = labels0[350:370]
+    example_images = images0[350:353]
+    example_labels = labels0[350:353]
     model.eval()
     with torch.no_grad():
         example_images = example_images.to(device)

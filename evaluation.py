@@ -123,9 +123,11 @@ def evaluate(
             #data_generator.generate_angle_data(env,obs,step_count)
             #print(obs)
             
-
             step_count += 1
 
+           
+            data_generator.generate_angle_data(env,obs,step_count)
+            
             # Accumulate rewards for all agents
             for a in env.agents:
                 rewards[a] += env.rewards[a]
@@ -188,7 +190,7 @@ def evaluate(
 
 def evaluate_zombies(predict_function):
     # Get all datafiles
-    obs_dir = Path(__file__).parent / "observation_data"
+    obs_dir = Path(__file__).parent / "observation_data/distortion5"
     obs_files = list(obs_dir.glob("*_obs.npy"))
     precisions = []
     start_time = time.time()
@@ -199,7 +201,9 @@ def evaluate_zombies(predict_function):
             raise Exception(f"File missing: {zombies_file}")
         obs = np.load(obs_file)
         zombies_gt = np.load(zombies_file)
+        print(zombies_gt)
         zombies_pred = predict_function(obs)
+        print(zombies_pred)
         zombies_mask = np.zeros((zombies_gt.shape[0]), dtype=np.bool_)
         found = 0
         for zombie_pred in zombies_pred:
@@ -209,9 +213,15 @@ def evaluate_zombies(predict_function):
                 if iou(zombie_pred, zombie_gt) >= 0.5:
                     found += 1
                     zombies_mask[z_i] = True
-        precisions.append(found / zombies_gt.shape[0])
-    total_time = time.time() - start_time
-    avgp = sum(precisions) / len(precisions)
+        num_gt = zombies_gt.shape[0]
+        num_pred = 0 if zombies_pred is None else len(zombies_pred)
+
+        if num_gt == 0:
+            precisions.append(1.0 if num_pred == 0 else 0.0)
+        else:
+            precisions.append(found / num_gt)
+            total_time = time.time() - start_time
+            avgp = sum(precisions) / len(precisions)
 
     results = {
         "total_images": len(obs_files),

@@ -3,7 +3,7 @@ from typing import Any
 import pygame
 from PIL import Image, ImageDraw
 import random
-
+from pathlib import Path
 def test_examples():
     array = np.load("C:\\Users\\tinsa\\KULeuven\\ml-project-2025-2026-main\\ml-project-2025-2026-main\\observation_data\\example_obs.npy")
     array2 = np.load("C:\\Users\\tinsa\\KULeuven\\ml-project-2025-2026-main\\ml-project-2025-2026-main\\observation_data\\example_zombies.npy")
@@ -140,7 +140,7 @@ class DataGenerator:
          if self._counter==1000:
              images = np.array(self.images)
              labels = np.array(self.labels)
-             np.savez("dataset_angles/dataset_test3.npz", images=images, labels=labels)
+             np.savez("dataset_angles/dataset_test5.npz", images=images, labels=labels)
          data_own = []
          for object in obs:
              if np.isscalar(object[5]) and object[5]==1:
@@ -185,6 +185,27 @@ class DataGenerator:
          self._counter+=1
          return data_own
          
+
+    def generate_test_zombie_data(self,env : Any, agent, obs, step):
+        curr_state = env.state()
+        zombie_coords = extract_zombie_coords(curr_state)
+        matrix = []
+        for zombie in zombie_coords:
+            matrix.append([zombie[0]*1280,zombie[1]*720,29,31])
+        data = pygame.surfarray.array3d(env.unwrapped.screen)
+        data = np.swapaxes(data, 0, 1)
+
+        obs_dir = Path(__file__).parent / "observation_data/distortion5"
+        obs_dir.mkdir(exist_ok=True)
+
+        obs_path = obs_dir / f"{self._counter}_obs.npy"
+        zombies_path = obs_dir / f"{self._counter}_zombies.npy"
+
+        np.save(obs_path, data.ravel())
+        np.save(zombies_path, np.array(matrix))
+
+        self._counter += 1
+            
 
 def main():
     print("Hello")

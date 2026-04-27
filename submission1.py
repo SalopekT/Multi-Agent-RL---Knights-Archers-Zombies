@@ -133,7 +133,7 @@ class CustomWrapper(BaseWrapper):
         #print(output_heading[0].item(), output_heading[1].item())
         
         
-        zombies = self.zombie_detector(obs)
+        zombies = self.zombie_detector(obs.ravel())
         num_zombies = len(zombies)
        
         sorted_zombies = sorted(zombies, key=lambda z: z[1])
@@ -178,7 +178,7 @@ class CustomPredictFunction(Callable):
     def __init__(self, env):
 
         # Here you should load your trained model(s) from a checkpoint in your folder
-        best_checkpoint = (Path("results6") / "learner_group" / "learner" / "rl_module").resolve()
+        best_checkpoint = (Path("results7") / "learner_group" / "learner" / "rl_module").resolve()
         self.modules = MultiRLModule.from_checkpoint(best_checkpoint)
         self.archer0_heading = 0
         self.archer0_direction = pygame.Vector2(0, -1)
@@ -190,7 +190,8 @@ class CustomPredictFunction(Callable):
 
     def __call__(self, observation, agent, *args, **kwargs):
         
-        rl_module = self.modules[agent]
+        #rl_module = self.modules[agent]
+        rl_module = self.modules["shared_policy"]
         fwd_ins = {"obs": torch.Tensor(observation).unsqueeze(0)}
         #fwd_ins = observation
         fwd_outputs = rl_module.forward_inference(fwd_ins)
@@ -248,7 +249,8 @@ class CustomZombieDetectorFunction(Callable):
         """
         
         matrix = []
-        img = cv2.resize(observation, (416, 416))
+        img = observation.reshape(720, 1280, 3)
+        img = cv2.resize(img, (416, 416))
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img = torch.from_numpy(img).float() / 255.0  
         img = img.permute(2, 0, 1).unsqueeze(0).to(self.device) 

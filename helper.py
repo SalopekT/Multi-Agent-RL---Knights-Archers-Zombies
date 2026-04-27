@@ -1,12 +1,10 @@
 import numpy as np
-data = np.load("dataset_angles/dataset2.npz")
-images = data["images"]
-labels = data["labels"]
 
-print(images.shape)
-print(labels.shape)
+a = np.load("observation_data/distortion3/21_obs.npy")
+b = np.load("observation_data/distortion3/21_zombies.npy")
 
-print(labels[:10])
+print("File 1:")
+print(a)
 
-angles = np.arctan2(labels[:,1], labels[:,0])
-print(np.histogram(angles, bins=8))
+print("\nFile 2:")
+print(b)
