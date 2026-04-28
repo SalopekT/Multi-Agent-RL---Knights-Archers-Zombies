@@ -142,13 +142,13 @@ class CustomWrapper(BaseWrapper):
         #print(f"Zombie detection took {end-start:.6f} seconds")
         
         #in final obs i normalize to get values from -1 to 1, before normalizing they are either -h to h (x) or -w to w(y)
-        '''if agent == "archer_0":
+        if agent == "archer_0":
             output_heading = self.archer0_direction
         elif agent == "archer_1":
-            output_heading = self.archer1_direction'''
+            output_heading = self.archer1_direction
         final_obs = [x/1280,y/720,
-                         output_heading[0].item(),output_heading[1].item(),
-                         #output_heading[0], output_heading[1],
+                        #output_heading[0].item(),output_heading[1].item(),
+                         output_heading[0], output_heading[1],
                          teammate_pos_rel_x/1280,teammate_pos_rel_y/720]
         #print(self.angle_archer0)
         if num_zombies<5:
@@ -173,7 +173,7 @@ class CustomWrapper(BaseWrapper):
         return np.array(final_obs, dtype=np.float32)
    
                 
-    '''def step(self, action):
+    def step(self, action):
         agent = self.env.agent_selection
         if action==2: 
             if agent == "archer_0":
@@ -194,7 +194,7 @@ class CustomWrapper(BaseWrapper):
                 self.angle_archer1 -= self.ang_rate
                 self.archer1_direction = pygame.Vector2(0, -1).rotate(-self.angle_archer1)
     
-        #print(self.angle_archer0)
+        print(self.angle_archer0)
         return self.env.step(action)
             
     def reset(self, seed=None, options=None):
@@ -207,7 +207,7 @@ class CustomWrapper(BaseWrapper):
         self.zombie_tick = 0
         self.cached_zombies = []
 
-        return self.env.reset(seed=seed, options=options)'''
+        return self.env.reset(seed=seed, options=options)
 
             
 
@@ -218,7 +218,7 @@ class CustomPredictFunction(Callable):
     def __init__(self, env):
 
         # Here you should load your trained model(s) from a checkpoint in your folder
-        best_checkpoint = (Path("results3") / "learner_group" / "learner" / "rl_module").resolve()
+        best_checkpoint = (Path("results4") / "learner_group" / "learner" / "rl_module").resolve()
         self.modules = MultiRLModule.from_checkpoint(best_checkpoint)
         self.archer0_heading = 0
         self.archer0_direction = pygame.Vector2(0, -1)

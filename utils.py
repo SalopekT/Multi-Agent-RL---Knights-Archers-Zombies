@@ -35,7 +35,7 @@ def create_environment(
     # Set parameters
 
     num_agents = 2
-    visual_observation = False
+    visual_observation = True
 
 
     # Create base environment

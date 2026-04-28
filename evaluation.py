@@ -126,7 +126,7 @@ def evaluate(
             step_count += 1
 
            
-            data_generator.generate_angle_data(env,obs,step_count)
+            #data_generator.generate_angle_data(env,obs,step_count)
             
             # Accumulate rewards for all agents
             for a in env.agents:

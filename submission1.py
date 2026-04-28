@@ -178,7 +178,7 @@ class CustomPredictFunction(Callable):
     def __init__(self, env):
 
         # Here you should load your trained model(s) from a checkpoint in your folder
-        best_checkpoint = (Path("results7") / "learner_group" / "learner" / "rl_module").resolve()
+        best_checkpoint = (Path("results6") / "learner_group" / "learner" / "rl_module").resolve()
         self.modules = MultiRLModule.from_checkpoint(best_checkpoint)
         self.archer0_heading = 0
         self.archer0_direction = pygame.Vector2(0, -1)
@@ -190,8 +190,8 @@ class CustomPredictFunction(Callable):
 
     def __call__(self, observation, agent, *args, **kwargs):
         
-        #rl_module = self.modules[agent]
-        rl_module = self.modules["shared_policy"]
+        rl_module = self.modules[agent]
+        #rl_module = self.modules["shared_policy"]
         fwd_ins = {"obs": torch.Tensor(observation).unsqueeze(0)}
         #fwd_ins = observation
         fwd_outputs = rl_module.forward_inference(fwd_ins)
