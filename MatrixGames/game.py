@@ -175,6 +175,17 @@ class EpsilonGreedyPlayer(Player):
      def __init__(self, game, i, epsilon):
           super().__init__(game,i)
           self._epsilon = epsilon
+          if len(super().strategy)==2:
+             #q1 = random.randint(1,10)
+             #q2 = random.randint(1,10)
+             q1 = random.random()
+             q2 = random.random()
+             self._q_table = [q1,q2]
+          elif len(super().strategy)==3:
+             q1 = random.random()
+             q2 = random.random()
+             q3 = random.random()
+             self._q_table = [q1,q2,q3]
 
      def make_move(self):
         number = np.random.uniform()
