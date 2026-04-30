@@ -101,7 +101,7 @@ class CustomWrapper(BaseWrapper):
                     self.phase_1+=1
         
         elif action == 0:
-            print(x)
+            #print(x)
             if agent == "archer_0":
                 if self.phase_0 == 1 and x<=120:
                     self.phase_0 = 2
@@ -109,7 +109,7 @@ class CustomWrapper(BaseWrapper):
                 if self.phase_1 == 1 and x>=1140:
                     self.phase_1 = 2
         #print(self.angle_archer0)
-        print(action)
+        #print(action)
         return self.env.step(action)
             
     def reset(self, seed=None, options=None):
@@ -174,8 +174,8 @@ class CustomZombieDetectorFunction(Callable):
         pass
 
     def __call__(self, observation, *args, **kwargs):
-        print("hello")
-        print(observation)
+        #print("hello")
+        #print(observation)
         nb_zombies_detected = random.randint(0,4)
         zombie_rects = np.zeros((nb_zombies_detected, 4))
         for i in range(nb_zombies_detected):

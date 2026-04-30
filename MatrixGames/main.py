@@ -55,17 +55,17 @@ def main():
     
     rps = game.Game(N_rps,A_rps,u_rps,u_1_rps,u_2_rps)
 
-    player1 = game.EpsilonGreedyPlayer(rps,1,0.1)
+    '''player1 = game.EpsilonGreedyPlayer(rps,1,0.1)
     player2 = game.EpsilonGreedyPlayer(rps,2,0.1)
     
     rps.add_player(player1)
-    rps.add_player(player1)
+    rps.add_player(player1)'''
 
-    '''player1 = game.BoltzmannPlayer(stag_hunt,1,0.1)
+    player1 = game.BoltzmannPlayer(rps,1,0.1)
     #player1._q_table = [10,1.9/3]
 
-    player2 = game.BoltzmannPlayer(stag_hunt,2,0.1)
-    #player2._q_table = [10,1.9/3]'''
+    player2 = game.BoltzmannPlayer(rps,2,0.1)
+    #player2._q_table = [10,1.9/3]
 
     '''player3 = game.Player(stag_hunt,2)
     player3.strategy = [0.7,0.3]'''
@@ -73,8 +73,8 @@ def main():
     '''player1 = game.LenientBoltzmannPlayer(rps,1,0.1,10)
     player2 = game.LenientBoltzmannPlayer(rps,2,0.1,10)'''
 
-    '''stag_hunt.add_player(player1)
-    stag_hunt.add_player(player2)'''
+    rps.add_player(player1)
+    rps.add_player(player1)
 
     def barycentric_to_cartesian(traj):
         traj = np.array(traj)
@@ -94,7 +94,7 @@ def main():
 
         return x, y
 
-    ''''ax = plots.show_replicator_dynamics_boltzmann_one_pop(rps)
+    ax = plots.show_replicator_dynamics_boltzmann_one_pop(rps)
     
     for epoch in range(5):
         for i in range(1000000):
@@ -114,7 +114,7 @@ def main():
     [0, 0]
     ])
     ax.plot(triangle[:,0], triangle[:,1], 'k:')
-    plt.show()'''
+    plt.show()
     
     '''ax = plots.show_replicator_dynamics_lenient_boltzmann_one_pop(rps)
     
@@ -166,7 +166,7 @@ def main():
 
     plt.show()'''
     
-    for epoch in range(30):
+    '''for epoch in range(30):
         print("new epoch")
         for i in range(1000000):
             rps.play_round()
@@ -174,6 +174,6 @@ def main():
                 print(player1.q_table)
                 #print(player2.q_table)
         rps.reinit_strategies()
-
+'''
 if __name__ == "__main__":
     main()
