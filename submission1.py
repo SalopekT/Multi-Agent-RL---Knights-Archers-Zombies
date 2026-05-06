@@ -178,7 +178,7 @@ class CustomPredictFunction(Callable):
     def __init__(self, env):
 
         # Here you should load your trained model(s) from a checkpoint in your folder
-        best_checkpoint = (Path("results6_best") / "learner_group" / "learner" / "rl_module").resolve()
+        best_checkpoint = (Path("results6") / "learner_group" / "learner" / "rl_module").resolve()
         self.modules = MultiRLModule.from_checkpoint(best_checkpoint)
         self.archer0_heading = 0
         self.archer0_direction = pygame.Vector2(0, -1)

@@ -10,7 +10,7 @@ logger = logging.getLogger("ml-project")
 
 
 def create_environment(
-    max_cycles: int = 10000,
+    max_cycles: int = 2500,
     render_mode: Optional[str] = None,
     max_zombies: int = 4,
     frame_stack: Optional[int] = None,
